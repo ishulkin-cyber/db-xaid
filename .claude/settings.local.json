@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod +x \"/Users/igorsulkin/Documents/project DBXAID/dashboard/start.sh\")",
+      "Bash(npm install:*)",
+      "Bash(export PATH=\"/opt/homebrew/bin:$PATH\")",
+      "Bash(npm --version)",
+      "Bash(pip3 --version)",
+      "Bash(brew --version)",
+      "Bash(brew list:*)",
+      "Read(//usr/local/bin/**)",
+      "Read(//opt/homebrew/**)",
+      "Bash(curl -fsSL https://nodejs.org/dist/v20.18.0/node-v20.18.0-darwin-x64.tar.gz -o /tmp/node.tar.gz)",
+      "Read(//tmp/**)",
+      "Bash(python3)",
+      "Bash(curl -s \"http://localhost:8000/api/doctor/33/detail\")",
+      "Bash(python3 -m json.tool)"
+    ]
+  }
+}

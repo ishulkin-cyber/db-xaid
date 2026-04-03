@@ -1,0 +1,27 @@
+# Secrets & credentials
+dashboard/backend/.env
+
+# SQLite database (local data, not code)
+dashboard/backend/grades_cache.db
+
+# Python virtual environment
+dashboard/backend/.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Node modules (frontend)
+dashboard/frontend/node_modules/
+dashboard/frontend/dist/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Sensitive setup docs
+1.1/

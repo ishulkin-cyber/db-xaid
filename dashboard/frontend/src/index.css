@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Inter", sans-serif;
+  background-color: #0a0a0a;
+  color: #fff;
+}
+
+/* Thin scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #1a1a1a; }
+::-webkit-scrollbar-thumb { background: #3f3f3f; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #555; }
+
+/* Grade colors */
+.grade-cell-0    { background: transparent; color: #4ade80; }
+.grade-cell-low  { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
+.grade-cell-med  { background: rgba(234, 179, 8, 0.15);  color: #eab308; }
+.grade-cell-high { background: rgba(249, 115, 22, 0.15); color: #f97316; }
+.grade-cell-crit { background: rgba(239, 68, 68, 0.25);  color: #ef4444; }
