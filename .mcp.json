@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "prod-database": {
+      "type": "sse",
+      "url": "https://api.platform.xaidos.com/mcp/database/sse",
+      "headers": {
+        "Authorization": "Basic <BASE64_MANAGER_TOKEN>"
+      }
+    },
+    "google-sheets": {
+      "command": "npx",
+      "args": ["-y", "mcp-google-sheets"],
+      "env": {
+        "GOOGLE_SHEETS_CLIENT_ID": "<YOUR_GOOGLE_CLIENT_ID>",
+        "GOOGLE_SHEETS_CLIENT_SECRET": "<YOUR_GOOGLE_CLIENT_SECRET>",
+        "TOKEN_PATH": "~/.mcp-google-sheets-token.json"
+      }
+    }
+  }
+}

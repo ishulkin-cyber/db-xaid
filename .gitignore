@@ -1,27 +1,38 @@
-# Secrets & credentials
-dashboard/backend/.env
+# Dependencies
+dashboard/node_modules/
+dashboard/.pnp
+dashboard/.pnp.js
 
-# SQLite database (local data, not code)
-dashboard/backend/grades_cache.db
+# Build output
+dashboard/.next/
+dashboard/out/
 
-# Python virtual environment
-dashboard/backend/.venv/
+# Data files (patient data — never commit)
+analysis/data/*.json
 
-# Python cache
+# Environment files
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+
+# Python
 __pycache__/
 *.pyc
 *.pyo
+.venv/
+venv/
 
-# Node modules (frontend)
-dashboard/frontend/node_modules/
-dashboard/frontend/dist/
-
-# macOS
+# OS
 .DS_Store
+*.DS_Store
+Thumbs.db
 
-# IDE
+# Editor
 .vscode/
 .idea/
 
-# Sensitive setup docs
-1.1/
+# Next.js
+dashboard/next-env.d.ts
+dashboard/tsconfig.tsbuildinfo
