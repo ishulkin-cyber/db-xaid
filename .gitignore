@@ -1,0 +1,38 @@
+# Dependencies
+dashboard/node_modules/
+dashboard/.pnp
+dashboard/.pnp.js
+
+# Build output
+dashboard/.next/
+dashboard/out/
+
+# Data files (patient data — never commit)
+analysis/data/*.json
+
+# Environment files
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# OS
+.DS_Store
+*.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Next.js
+dashboard/next-env.d.ts
+dashboard/tsconfig.tsbuildinfo
