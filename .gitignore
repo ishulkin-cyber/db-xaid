@@ -7,8 +7,7 @@ dashboard/.pnp.js
 dashboard/.next/
 dashboard/out/
 
-# Data files (patient data — never commit)
-analysis/data/*.json
+# Data files
 
 # Environment files
 .env
