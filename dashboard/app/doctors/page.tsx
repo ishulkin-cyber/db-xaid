@@ -5,6 +5,8 @@ import {
   filterFindingsByDateRange,
   getOverallStatsFromFindings,
   getDoctorStatsListFromFindings,
+  countMIPS2bInFindings,
+  getMIPS2bCountsByDoctor,
 } from "@/lib/data";
 import {
   getPeriodRange,
@@ -113,8 +115,10 @@ export default function DoctorsPage({
     ? getDoctorStatsListFromFindings(prevFindings)
     : null;
 
+  const mips2b = countMIPS2bInFindings(currFindings);
+  const mips2bByDoctor = getMIPS2bCountsByDoctor(currFindings);
+
   const grade3Plus = stats.grade3 + stats.grade4;
-  const prevGrade3Plus = prevStats ? prevStats.grade3 + prevStats.grade4 : null;
 
   const g1Pct = stats.totalFindings > 0
     ? Math.round(stats.grade1 / stats.totalFindings * 1000) / 10
@@ -122,13 +126,6 @@ export default function DoctorsPage({
   const g2aPct = stats.totalFindings > 0
     ? Math.round(stats.grade2a / stats.totalFindings * 1000) / 10
     : 0;
-
-  const g2bPct = stats.totalFindings > 0
-    ? Math.round(stats.grade2b / stats.totalFindings * 1000) / 10
-    : 0;
-  const prevG2bPct = prevStats && prevStats.totalFindings > 0
-    ? Math.round(prevStats.grade2b / prevStats.totalFindings * 1000) / 10
-    : null;
 
   const grade3PlusPct = stats.totalFindings > 0
     ? Math.round(grade3Plus / stats.totalFindings * 1000) / 10
@@ -188,7 +185,7 @@ export default function DoctorsPage({
       )}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+      <div className="grid grid-cols-6 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -202,6 +199,7 @@ export default function DoctorsPage({
                 <Delta curr={stats.totalStudies} prev={prevStats.totalStudies} />
               )}
             </p>
+            <p className="mt-1 text-xs text-transparent select-none">—</p>
           </CardContent>
         </Card>
 
@@ -213,6 +211,7 @@ export default function DoctorsPage({
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">{stats.totalDoctors}</p>
+            <p className="mt-1 text-xs text-transparent select-none">—</p>
           </CardContent>
         </Card>
 
@@ -235,7 +234,7 @@ export default function DoctorsPage({
           </CardContent>
         </Card>
 
-        {/* Grade 2b block */}
+        {/* Grade 2b non-MIPS */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -244,13 +243,27 @@ export default function DoctorsPage({
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold text-amber-600">
-              {stats.grade2b}
+              {stats.grade2b - mips2b}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {g2bPct}% находок
-              {prevG2bPct !== null && (
-                <PctDelta curr={g2bPct} prev={prevG2bPct} invert />
-              )}
+              {stats.totalFindings > 0 ? Math.round((stats.grade2b - mips2b) / stats.totalFindings * 1000) / 10 : 0}% находок
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Grade 2b-MIPS */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Grade 2b-MIPS
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-orange-500">
+              {mips2b}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {stats.totalFindings > 0 ? Math.round(mips2b / stats.totalFindings * 1000) / 10 : 0}% находок
             </p>
           </CardContent>
         </Card>
@@ -282,6 +295,7 @@ export default function DoctorsPage({
           { color: "bg-emerald-500", label: "G1 — совпадение" },
           { color: "bg-blue-400",    label: "G2a — стилистика" },
           { color: "bg-amber-400",   label: "G2b — мин. клин." },
+          { color: "bg-amber-600",   label: "G2b-MIPS — compliance" },
           { color: "bg-orange-500",  label: "G3 — значимый пропуск" },
           { color: "bg-red-500",     label: "G4 — гипердиагностика" },
         ].map(({ color, label }) => (
@@ -319,6 +333,7 @@ export default function DoctorsPage({
                   <TableHead className="text-right">Находки</TableHead>
                   <TableHead className="text-right">Клин. конкорд. %</TableHead>
                   <TableHead className="text-right">Grade 2b</TableHead>
+                  <TableHead className="text-right">2b-MIPS</TableHead>
                   <TableHead className="text-right">Grade 3+</TableHead>
                   <TableHead>Распределение</TableHead>
                 </TableRow>
@@ -382,6 +397,18 @@ export default function DoctorsPage({
                         )}
                       </TableCell>
                       <TableCell className="text-right">
+                        {(() => {
+                          const docMips = mips2bByDoctor.get(doc.doctor_id) ?? 0;
+                          return docMips > 0 ? (
+                            <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                              {docMips}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">0</span>
+                          );
+                        })()}
+                      </TableCell>
+                      <TableCell className="text-right">
                         {doc.grade3 + doc.grade4 > 0 ? (
                           <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
                             {doc.grade3 + doc.grade4}
@@ -402,6 +429,7 @@ export default function DoctorsPage({
                           grade1={doc.grade1}
                           grade2a={doc.grade2a}
                           grade2b={doc.grade2b}
+                          grade2bMips={mips2bByDoctor.get(doc.doctor_id) ?? 0}
                           grade3={doc.grade3}
                           grade4={doc.grade4}
                           total={doc.total_findings}

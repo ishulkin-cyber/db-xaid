@@ -473,6 +473,26 @@ export function getMIPSClassifiedFindings(): ClassifiedFinding[] {
   return readJSON<ClassifiedFinding[]>("dv_findings_2b_classified.json");
 }
 
+export function countMIPS2bInFindings(findings: DVFinding[]): number {
+  const classified = getMIPSClassifiedFindings();
+  const accessions = new Set(findings.map((f) => f.accession_number));
+  return classified.filter(
+    (f) => f.mips_related && accessions.has(f.accession_number)
+  ).length;
+}
+
+export function getMIPS2bCountsByDoctor(findings: DVFinding[]): Map<number, number> {
+  const classified = getMIPSClassifiedFindings();
+  const accessions = new Set(findings.map((f) => f.accession_number));
+  const result = new Map<number, number>();
+  for (const cf of classified) {
+    if (cf.mips_related && accessions.has(cf.accession_number)) {
+      result.set(cf.doctor_id, (result.get(cf.doctor_id) ?? 0) + 1);
+    }
+  }
+  return result;
+}
+
 export function getMIPSOverallStats(): {
   total949: number;
   total2b: number;

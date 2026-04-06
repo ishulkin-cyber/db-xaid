@@ -102,7 +102,7 @@ def notes_confirm(record: dict, keywords: list) -> bool:
     return any(k in text for k in keywords)
 
 
-def classify_record(record: dict) -> tuple[bool, str | None]:
+def classify_record(record: dict):  # -> tuple[bool, Optional[str]]
     """Returns (mips_related, mips_measure_id | None)."""
     cat = record.get("finding_category", "").lower().strip()
 
