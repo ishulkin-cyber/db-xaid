@@ -212,6 +212,13 @@ export function getDoctorFindings(doctorId: number): DVFinding[] {
 
 export function getDoctorStudies(doctorId: number): DVStudySummary[] {
   const findings = getDoctorFindings(doctorId);
+  const classified = getMIPSClassifiedFindings();
+  const mipsAccMap = new Map<string, number>();
+  for (const cf of classified) {
+    if (cf.mips_related) {
+      mipsAccMap.set(cf.accession_number, (mipsAccMap.get(cf.accession_number) ?? 0) + 1);
+    }
+  }
   const accessions = [...new Set(findings.map((f) => f.accession_number))];
 
   return accessions.map((acc) => {
@@ -224,6 +231,7 @@ export function getDoctorStudies(doctorId: number): DVStudySummary[] {
     const g3 = accFindings.filter((f) => f.grade === "3").length;
     const g4 = accFindings.filter((f) => f.grade === "4").length;
     const discrepancies = accFindings.filter((f) => f.grade !== "1").length;
+    const mips2b = mipsAccMap.get(acc) ?? 0;
 
     // Determine overall grade: worst grade present
     let overallGrade: Grade | "N/A" = "N/A";
@@ -250,6 +258,7 @@ export function getDoctorStudies(doctorId: number): DVStudySummary[] {
       significant_underreport_count: g3,
       significant_overreport_count: g4,
       discrepancy_count: discrepancies,
+      mips2b_count: mips2b,
       key_discrepancies: keyDiscrepancies,
     } satisfies DVStudySummary;
   });
@@ -292,6 +301,13 @@ export function getDoctorTrendByDate(doctorId: number): TrendDataPoint[] {
 
 export function getDVStudySummaries(): DVStudySummary[] {
   const findings = getDVFindings();
+  const classified = getMIPSClassifiedFindings();
+  const mipsAccMap = new Map<string, number>();
+  for (const cf of classified) {
+    if (cf.mips_related) {
+      mipsAccMap.set(cf.accession_number, (mipsAccMap.get(cf.accession_number) ?? 0) + 1);
+    }
+  }
   const accessions = [...new Set(findings.map((f) => f.accession_number))];
 
   return accessions.map((acc) => {
@@ -305,6 +321,7 @@ export function getDVStudySummaries(): DVStudySummary[] {
     const g3 = accFindings.filter((f) => f.grade === "3").length;
     const g4 = accFindings.filter((f) => f.grade === "4").length;
     const discrepancies = accFindings.filter((f) => f.grade !== "1").length;
+    const mips2b = mipsAccMap.get(acc) ?? 0;
 
     let overallGrade: Grade | "N/A" = "N/A";
     if (g4 > 0) overallGrade = "4";
@@ -330,6 +347,7 @@ export function getDVStudySummaries(): DVStudySummary[] {
       significant_underreport_count: g3,
       significant_overreport_count: g4,
       discrepancy_count: discrepancies,
+      mips2b_count: mips2b,
       key_discrepancies: keyDiscrepancies,
     } satisfies DVStudySummary;
   });
@@ -424,12 +442,25 @@ export interface GradeTrendPoint {
   label: string;
   clinConcordance: number;
   g2bPct: number;
+  g2bNonMipsPct: number;
+  g2bMipsPct: number;
   g3PlusPct: number;
   totalFindings: number;
 }
 
 export function getGradeTrendData(mode: "week" | "month" | "year" = "month"): GradeTrendPoint[] {
   const source = getDVFindings().filter((f) => f.exam_date);
+  const classified = getMIPSClassifiedFindings();
+  // Build set of accession_numbers that have mips findings per period
+  const mipsAccSet = new Set(classified.filter((f) => f.mips_related).map((f) => f.accession_number));
+  // Build mips count by exam_date key
+  const mipsGroups: Record<string, number> = {};
+  for (const cf of classified) {
+    if (!cf.mips_related || !cf.exam_date) continue;
+    const key = toPeriodKey(cf.exam_date, mode);
+    mipsGroups[key] = (mipsGroups[key] ?? 0) + 1;
+  }
+
   const groups: Record<string, DVFinding[]> = {};
   for (const f of source) {
     const key = toPeriodKey(f.exam_date!, mode);
@@ -446,11 +477,15 @@ export function getGradeTrendData(mode: "week" | "month" | "year" = "month"): Gr
       const g2b = pf.filter((f) => f.grade === "2b").length;
       const g3  = pf.filter((f) => f.grade === "3").length;
       const g4  = pf.filter((f) => f.grade === "4").length;
+      const mips2b = mipsGroups[key] ?? 0;
+      const nonMips2b = Math.max(0, g2b - mips2b);
       return {
         period: key,
         label: toPeriodLabel(key, mode),
         clinConcordance: pct(g1 + g2a, total),
         g2bPct: pct(g2b, total),
+        g2bNonMipsPct: pct(nonMips2b, total),
+        g2bMipsPct: pct(mips2b, total),
         g3PlusPct: pct(g3 + g4, total),
         totalFindings: total,
       };

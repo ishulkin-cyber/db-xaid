@@ -27,7 +27,11 @@ export function DVStudyTable({ summaries, doctors }: DVStudyTableProps) {
     if (doctorFilter !== "all") {
       result = result.filter((s) => String(s.doctor_id) === doctorFilter);
     }
-    if (gradeFilter !== "all") {
+    if (gradeFilter === "2b-mips") {
+      result = result.filter((s) => s.overall_grade === "2b" && s.mips2b_count > 0);
+    } else if (gradeFilter === "2b-only") {
+      result = result.filter((s) => s.overall_grade === "2b" && s.mips2b_count === 0);
+    } else if (gradeFilter !== "all") {
       result = result.filter((s) => s.overall_grade === gradeFilter);
     }
     return result;
@@ -60,7 +64,8 @@ export function DVStudyTable({ summaries, doctors }: DVStudyTableProps) {
           <option value="all">Все оценки</option>
           <option value="1">Grade 1</option>
           <option value="2a">Grade 2a</option>
-          <option value="2b">Grade 2b</option>
+          <option value="2b-only">Grade 2b (без MIPS)</option>
+          <option value="2b-mips">Grade 2b-MIPS</option>
           <option value="3">Grade 3</option>
           <option value="4">Grade 4</option>
         </select>
@@ -77,14 +82,15 @@ export function DVStudyTable({ summaries, doctors }: DVStudyTableProps) {
             <TableHead>Врач</TableHead>
             <TableHead>Оценка</TableHead>
             <TableHead className="text-right">Находки</TableHead>
-            <TableHead className="text-right">Расхождения</TableHead>
+            <TableHead className="text-right">G2b</TableHead>
+            <TableHead className="text-right">2b-MIPS</TableHead>
             <TableHead>Ключевые расхождения</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filtered.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+              <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
                 Нет исследований по выбранным фильтрам.
               </TableCell>
             </TableRow>
@@ -108,10 +114,33 @@ export function DVStudyTable({ summaries, doctors }: DVStudyTableProps) {
                   </Link>
                 </TableCell>
                 <TableCell>
-                  <GradeBadge grade={s.overall_grade} />
+                  {s.overall_grade === "2b" && s.mips2b_count > 0 ? (
+                    <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900 border border-amber-300">
+                      2b-MIPS
+                    </span>
+                  ) : (
+                    <GradeBadge grade={s.overall_grade} />
+                  )}
                 </TableCell>
                 <TableCell className="text-right">{s.total_findings}</TableCell>
-                <TableCell className="text-right">{s.discrepancy_count}</TableCell>
+                <TableCell className="text-right">
+                  {s.minor_clinical_count > 0 ? (
+                    <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                      {s.minor_clinical_count}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">0</span>
+                  )}
+                </TableCell>
+                <TableCell className="text-right">
+                  {s.mips2b_count > 0 ? (
+                    <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                      {s.mips2b_count}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">0</span>
+                  )}
+                </TableCell>
                 <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
                   {s.key_discrepancies.join(", ") || "\u2014"}
                 </TableCell>

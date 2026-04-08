@@ -17,7 +17,7 @@ export function DoctorGradeBar({ grade1, grade2a, grade2b, grade2bMips, grade3, 
     { count: grade2a,       color: "bg-blue-400",    label: "2a" },
     { count: grade2bNonMips,color: "bg-amber-400",   label: "2b" },
     { count: grade2bMips,   color: "bg-amber-600",   label: "2b-MIPS" },
-    { count: grade3,        color: "bg-orange-500",  label: "3" },
+    { count: grade3,        color: "bg-red-500",     label: "3" },
     { count: grade4,        color: "bg-red-500",     label: "4" },
   ];
 

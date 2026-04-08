@@ -4,7 +4,7 @@ export const gradeColors: Record<Grade, { bg: string; text: string; badge: strin
   "1":  { bg: "bg-emerald-50",  text: "text-emerald-700",  badge: "bg-emerald-100 text-emerald-800",  border: "border-emerald-500", label: "Concordant" },
   "2a": { bg: "bg-blue-50",     text: "text-blue-700",     badge: "bg-blue-100 text-blue-800",        border: "border-blue-500",    label: "Minor Stylistic" },
   "2b": { bg: "bg-amber-50",    text: "text-amber-700",    badge: "bg-amber-100 text-amber-800",      border: "border-amber-500",   label: "Minor Clinical" },
-  "3":  { bg: "bg-orange-50",   text: "text-orange-700",   badge: "bg-orange-100 text-orange-800",    border: "border-orange-600",  label: "Significant Underreport" },
+  "3":  { bg: "bg-red-50",      text: "text-red-700",      badge: "bg-red-100 text-red-800",          border: "border-red-600",     label: "Significant Underreport" },
   "4":  { bg: "bg-red-50",      text: "text-red-700",      badge: "bg-red-100 text-red-800",          border: "border-red-600",     label: "Significant Overreport" },
 };
 

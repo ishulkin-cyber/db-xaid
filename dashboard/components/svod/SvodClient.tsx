@@ -1,18 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, ReferenceLine,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 import type { GradeTrendPoint } from "@/lib/data";
+import { PeriodSelector } from "@/components/PeriodSelector";
+import type { PeriodMode } from "@/lib/period";
 
 const STORAGE_KEY = "svod-grade-targets-v2";
 
-type GradeKey = "clinConcordance" | "g2bPct" | "g3PlusPct";
+type GradeKey = "clinConcordance" | "g2bNonMipsPct" | "g2bMipsPct" | "g3PlusPct";
 
 interface RowDef {
   key: GradeKey;
@@ -33,12 +35,20 @@ const ROWS: RowDef[] = [
     lineColor: "#3b82f6",
   },
   {
-    key: "g2bPct",
-    label: "Минимальные клинические (G2b)",
-    desc: "Расхождения, не влияющие на тактику",
+    key: "g2bNonMipsPct",
+    label: "G2b — мин. клинические",
+    desc: "Расхождения, не влияющие на тактику (без MIPS)",
     higherIsBetter: false,
-    color: "text-amber-600",
+    color: "text-amber-500",
     lineColor: "#f59e0b",
+  },
+  {
+    key: "g2bMipsPct",
+    label: "G2b-MIPS — compliance",
+    desc: "Расхождения по MIPS/QCDR мерам (ACRad44, 364, 405, 406, QMM23)",
+    higherIsBetter: false,
+    color: "text-amber-700",
+    lineColor: "#b45309",
   },
   {
     key: "g3PlusPct",
@@ -50,23 +60,56 @@ const ROWS: RowDef[] = [
   },
 ];
 
-interface Props {
-  mode: "week" | "month" | "year";
-  trendData: GradeTrendPoint[];
+function PctDelta({
+  curr, prev, invert = false,
+}: {
+  curr: number; prev: number; invert?: boolean;
+}) {
+  const diff = Math.round((curr - prev) * 10) / 10;
+  if (diff === 0) return null;
+  const positive = diff > 0;
+  const good = invert ? !positive : positive;
+  return (
+    <span className={`ml-1 text-xs font-medium ${good ? "text-emerald-600" : "text-red-600"}`}>
+      {positive ? "▲" : "▼"}{Math.abs(diff)}%
+    </span>
+  );
 }
 
-const MODE_LABELS: Record<string, string> = {
-  week: "Неделя", month: "Месяц", year: "Год",
-};
+interface DoctorImpact {
+  doctor_id: number;
+  doctor_name: string;
+  total_studies: number;
+  total_findings: number;
+  grade3plus: number;
+  grade3plusPct: number;
+  mips2b: number;
+  mips2bPct: number;
+  clinConcordance: number;
+}
 
-export function SvodClient({ mode, trendData }: Props) {
-  const router = useRouter();
-  const pathname = usePathname();
+interface Props {
+  mode: PeriodMode;
+  ref_: string;
+  compareEnabled: boolean;
+  periodLabel: string;
+  prevPeriodLabel: string;
+  trendData: GradeTrendPoint[];
+  currentPoint: GradeTrendPoint | null;
+  prevPoint: GradeTrendPoint | null;
+  doctorImpact: DoctorImpact[];
+  prevDoctorImpactMap: Record<number, DoctorImpact>;
+}
+
+export function SvodClient({
+  mode, ref_, compareEnabled, periodLabel, prevPeriodLabel,
+  trendData, currentPoint, prevPoint, doctorImpact, prevDoctorImpactMap,
+}: Props) {
   const [targets, setTargets] = useState<Partial<Record<GradeKey, string>>>({});
-  // which lines to show
   const [visible, setVisible] = useState<Record<GradeKey, boolean>>({
     clinConcordance: true,
-    g2bPct: true,
+    g2bNonMipsPct: true,
+    g2bMipsPct: true,
     g3PlusPct: true,
   });
 
@@ -81,17 +124,23 @@ export function SvodClient({ mode, trendData }: Props) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   }
 
-  function switchMode(m: string) {
-    router.push(`${pathname}?mode=${m}`);
-  }
+  // Current = selected period point, fallback to last in trend
+  const fallback = trendData[trendData.length - 1];
+  const point = currentPoint ?? fallback;
 
-  // Current = last period in trend
-  const last = trendData[trendData.length - 1];
   const currentValues: Record<GradeKey, number> = {
-    clinConcordance: last?.clinConcordance ?? 0,
-    g2bPct: last?.g2bPct ?? 0,
-    g3PlusPct: last?.g3PlusPct ?? 0,
+    clinConcordance: point?.clinConcordance ?? 0,
+    g2bNonMipsPct:  point?.g2bNonMipsPct ?? 0,
+    g2bMipsPct:     point?.g2bMipsPct ?? 0,
+    g3PlusPct:      point?.g3PlusPct ?? 0,
   };
+
+  const prevValues: Record<GradeKey, number> | null = prevPoint ? {
+    clinConcordance: prevPoint.clinConcordance,
+    g2bNonMipsPct:  prevPoint.g2bNonMipsPct,
+    g2bMipsPct:     prevPoint.g2bMipsPct,
+    g3PlusPct:      prevPoint.g3PlusPct,
+  } : null;
 
   // Reference lines for set targets
   const refLines = ROWS.flatMap((row) => {
@@ -101,9 +150,11 @@ export function SvodClient({ mode, trendData }: Props) {
     return [{ key: row.key, value: t, color: row.lineColor }];
   });
 
+  const chartMode = mode === "week" ? "неделям" : mode === "month" ? "месяцам" : "годам";
+
   return (
     <div className="space-y-8">
-      {/* Header + mode selector */}
+      {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Свод</h1>
@@ -111,23 +162,26 @@ export function SvodClient({ mode, trendData }: Props) {
             Динамика качества описаний по грейдам
           </p>
         </div>
-        <div className="flex rounded-lg border bg-muted p-0.5 gap-0.5 self-start">
-          {(["week", "month", "year"] as const).map((m) => (
-            <button
-              key={m}
-              onClick={() => switchMode(m)}
-              className={cn(
-                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                mode === m
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {MODE_LABELS[m]}
-            </button>
-          ))}
-        </div>
       </div>
+
+      {/* Period selector */}
+      <Suspense>
+        <PeriodSelector
+          mode={mode}
+          ref_={ref_}
+          label={periodLabel}
+          compareEnabled={compareEnabled}
+        />
+      </Suspense>
+
+      {compareEnabled && (
+        <p className="text-sm text-muted-foreground">
+          Сравнение:{" "}
+          <span className="font-medium text-foreground">{periodLabel}</span>
+          {" "} vs{" "}
+          <span className="font-medium text-foreground">{prevPeriodLabel}</span>
+        </p>
+      )}
 
       {/* Target settings */}
       <Card>
@@ -141,6 +195,11 @@ export function SvodClient({ mode, trendData }: Props) {
                 <th className="py-2 pr-4 text-left font-medium text-muted-foreground w-8"></th>
                 <th className="py-2 pr-4 text-left font-medium text-muted-foreground">Метрика</th>
                 <th className="py-2 px-4 text-right font-medium text-muted-foreground">Текущее</th>
+                {compareEnabled && (
+                  <th className="py-2 px-4 text-right font-medium text-muted-foreground">
+                    Δ vs {prevPeriodLabel}
+                  </th>
+                )}
                 <th className="py-2 px-4 text-right font-medium text-muted-foreground">Цель %</th>
                 <th className="py-2 pl-4 text-center font-medium text-muted-foreground">Статус</th>
               </tr>
@@ -180,6 +239,19 @@ export function SvodClient({ mode, trendData }: Props) {
                     <td className={`py-3 px-4 text-right text-lg font-bold ${row.color}`}>
                       {curr}%
                     </td>
+                    {compareEnabled && (
+                      <td className="py-3 px-4 text-right">
+                        {prevValues ? (
+                          <PctDelta
+                            curr={curr}
+                            prev={prevValues[row.key]}
+                            invert={!row.higherIsBetter}
+                          />
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </td>
+                    )}
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <input
@@ -222,10 +294,7 @@ export function SvodClient({ mode, trendData }: Props) {
       {/* Trend chart */}
       <Card>
         <CardHeader>
-          <CardTitle>
-            Динамика по{" "}
-            {mode === "week" ? "неделям" : mode === "month" ? "месяцам" : "годам"}
-          </CardTitle>
+          <CardTitle>Динамика по {chartMode}</CardTitle>
         </CardHeader>
         <CardContent>
           {trendData.length < 2 ? (
@@ -257,6 +326,16 @@ export function SvodClient({ mode, trendData }: Props) {
                   }}
                   wrapperStyle={{ fontSize: 12 }}
                 />
+                {/* Highlight current period */}
+                {point && (
+                  <ReferenceLine
+                    x={point.label}
+                    stroke="#6366f1"
+                    strokeWidth={1.5}
+                    strokeDasharray="4 3"
+                    strokeOpacity={0.5}
+                  />
+                )}
                 {ROWS.map((row) =>
                   visible[row.key] ? (
                     <Line
@@ -289,6 +368,90 @@ export function SvodClient({ mode, trendData }: Props) {
               </LineChart>
             </ResponsiveContainer>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Doctor impact table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Врачи с наибольшим негативным влиянием</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Ранжировано по количеству значимых пропусков (G3+), затем по MIPS-нарушениям
+          </p>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b text-muted-foreground">
+                <th className="py-2 pr-4 text-left font-medium">#</th>
+                <th className="py-2 pr-4 text-left font-medium">Врач</th>
+                <th className="py-2 px-3 text-right font-medium">Исслед.</th>
+                <th className="py-2 px-3 text-right font-medium">Находок</th>
+                <th className="py-2 px-3 text-right font-medium">G3+ (кол.)</th>
+                <th className="py-2 px-3 text-right font-medium">G3+ (%)</th>
+                <th className="py-2 px-3 text-right font-medium">2b-MIPS</th>
+                <th className="py-2 pl-3 text-right font-medium">Клин. конкорд.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {doctorImpact.map((d, idx) => {
+                const prev = compareEnabled ? prevDoctorImpactMap[d.doctor_id] : undefined;
+                return (
+                  <tr key={d.doctor_id} className="border-b last:border-0 hover:bg-muted/30">
+                    <td className="py-2.5 pr-4 text-muted-foreground font-medium">{idx + 1}</td>
+                    <td className="py-2.5 pr-4">
+                      <Link href={`/doctors/${d.doctor_id}`} className="font-medium text-blue-600 hover:underline">
+                        {d.doctor_name}
+                      </Link>
+                    </td>
+                    <td className="py-2.5 px-3 text-right text-muted-foreground">{d.total_studies}</td>
+                    <td className="py-2.5 px-3 text-right text-muted-foreground">{d.total_findings}</td>
+                    <td className="py-2.5 px-3 text-right">
+                      {d.grade3plus > 0 ? (
+                        <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
+                          {d.grade3plus}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">0</span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 text-right">
+                      <span className={d.grade3plusPct > 5 ? "font-semibold text-red-600" : "text-muted-foreground"}>
+                        {d.grade3plusPct}%
+                      </span>
+                      {prev && (
+                        <PctDelta curr={d.grade3plusPct} prev={prev.grade3plusPct} invert />
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 text-right">
+                      {d.mips2b > 0 ? (
+                        <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                          {d.mips2b}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">0</span>
+                      )}
+                      {prev && (
+                        <PctDelta curr={d.mips2bPct} prev={prev.mips2bPct} invert />
+                      )}
+                    </td>
+                    <td className="py-2.5 pl-3 text-right">
+                      <span className={
+                        d.clinConcordance >= 60 ? "text-emerald-600 font-semibold" :
+                        d.clinConcordance >= 40 ? "text-amber-600 font-semibold" :
+                        "text-red-600 font-semibold"
+                      }>
+                        {d.clinConcordance}%
+                      </span>
+                      {prev && (
+                        <PctDelta curr={d.clinConcordance} prev={prev.clinConcordance} />
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </CardContent>
       </Card>
     </div>

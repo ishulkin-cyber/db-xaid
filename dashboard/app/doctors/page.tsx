@@ -117,6 +117,9 @@ export default function DoctorsPage({
 
   const mips2b = countMIPS2bInFindings(currFindings);
   const mips2bByDoctor = getMIPS2bCountsByDoctor(currFindings);
+  const prevMips2bByDoctor = prevFindings
+    ? getMIPS2bCountsByDoctor(prevFindings)
+    : null;
 
   const grade3Plus = stats.grade3 + stats.grade4;
 
@@ -199,7 +202,9 @@ export default function DoctorsPage({
                 <Delta curr={stats.totalStudies} prev={prevStats.totalStudies} />
               )}
             </p>
-            <p className="mt-1 text-xs text-transparent select-none">—</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {stats.totalFindings} находок
+            </p>
           </CardContent>
         </Card>
 
@@ -296,7 +301,7 @@ export default function DoctorsPage({
           { color: "bg-blue-400",    label: "G2a — стилистика" },
           { color: "bg-amber-400",   label: "G2b — мин. клин." },
           { color: "bg-amber-600",   label: "G2b-MIPS — compliance" },
-          { color: "bg-orange-500",  label: "G3 — значимый пропуск" },
+          { color: "bg-red-500",     label: "G3 — значимый пропуск" },
           { color: "bg-red-500",     label: "G4 — гипердиагностика" },
         ].map(({ color, label }) => (
           <span key={label} className="flex items-center gap-1.5">
@@ -399,12 +404,25 @@ export default function DoctorsPage({
                       <TableCell className="text-right">
                         {(() => {
                           const docMips = mips2bByDoctor.get(doc.doctor_id) ?? 0;
-                          return docMips > 0 ? (
-                            <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
-                              {docMips}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">0</span>
+                          const prevDocMips = prevMips2bByDoctor?.get(doc.doctor_id) ?? 0;
+                          const prevDoc = prevDoctorMap[doc.doctor_id];
+                          return (
+                            <>
+                              {docMips > 0 ? (
+                                <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                                  {docMips}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">0</span>
+                              )}
+                              {prevMips2bByDoctor && prevDoc && prevDoc.total_findings > 0 && (
+                                <PctDelta
+                                  curr={Math.round(docMips / doc.total_findings * 1000) / 10}
+                                  prev={Math.round(prevDocMips / prevDoc.total_findings * 1000) / 10}
+                                  invert
+                                />
+                              )}
+                            </>
                           );
                         })()}
                       </TableCell>

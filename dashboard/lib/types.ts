@@ -53,6 +53,7 @@ export interface DVStudySummary {
   significant_underreport_count: number;
   significant_overreport_count: number;
   discrepancy_count: number;
+  mips2b_count: number;
   key_discrepancies: string[];
 }
 
