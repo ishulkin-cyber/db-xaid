@@ -95,9 +95,9 @@ def cat_matches(cat: str, exact_set: set, substrings: list) -> bool:
 
 def notes_confirm(record: dict, keywords: list) -> bool:
     text = " ".join([
-        record.get("notes", ""),
-        record.get("validator_description", ""),
-        record.get("doctor_description", ""),
+        record.get("notes") or "",
+        record.get("validator_description") or "",
+        record.get("doctor_description") or "",
     ]).lower()
     return any(k in text for k in keywords)
 
