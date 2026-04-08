@@ -580,3 +580,159 @@ export function getMIPSByDoctor(): DoctorMIPSStat[] {
     })
     .sort((a, b) => b.mipsPct - a.mipsPct);
 }
+
+// --- Root cause analysis ---
+
+export interface RootCauseData {
+  /** Top G3+ finding categories */
+  g3TopCategories: { category: string; count: number; pct: number }[];
+  /** Top 2b-MIPS measures violated this period */
+  mipsTopMeasures: { measure: string; label: string; count: number }[];
+  /** Who is responsible for G3+ — individual vs systemic signal */
+  g3Concentration: {
+    topDoctorId: number;
+    topDoctorName: string;
+    topCount: number;
+    topPct: number;
+    totalG3: number;
+    isSystemic: boolean;
+  } | null;
+  /** % of findings from doctors with concordance <40% */
+  mixEffect: {
+    currLowPct: number;
+    prevLowPct: number | null;
+    changed: number | null;
+  };
+}
+
+export function getRootCauseData(
+  periodFindings: DVFinding[],
+  prevPeriodFindings: DVFinding[] | null,
+): RootCauseData {
+  const classified = getMIPSClassifiedFindings();
+  const periodAccessions = new Set(periodFindings.map((f) => f.accession_number));
+
+  // 1. Top G3+ categories
+  const g3findings = periodFindings.filter((f) => f.grade === "3" || f.grade === "4");
+  const g3ByCat: Record<string, number> = {};
+  for (const f of g3findings) {
+    g3ByCat[f.finding_category] = (g3ByCat[f.finding_category] ?? 0) + 1;
+  }
+  const g3TopCategories = Object.entries(g3ByCat)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([category, count]) => ({
+      category,
+      count,
+      pct: pct(count, g3findings.length),
+    }));
+
+  // 2. Top MIPS measures
+  const mipsByMeasure: Record<string, number> = {};
+  for (const cf of classified) {
+    if (cf.mips_related && cf.mips_measure && periodAccessions.has(cf.accession_number)) {
+      mipsByMeasure[cf.mips_measure] = (mipsByMeasure[cf.mips_measure] ?? 0) + 1;
+    }
+  }
+  const mipsTopMeasures = Object.entries(mipsByMeasure)
+    .sort((a, b) => b[1] - a[1])
+    .map(([measure, count]) => ({
+      measure,
+      label: MIPS_MEASURE_LABELS[measure] ?? measure,
+      count,
+    }));
+
+  // 3. G3+ concentration
+  let g3Concentration: RootCauseData["g3Concentration"] = null;
+  if (g3findings.length > 0) {
+    const byDoc: Record<number, { name: string; count: number }> = {};
+    for (const f of g3findings) {
+      if (!byDoc[f.doctor_id]) byDoc[f.doctor_id] = { name: f.doctor_name, count: 0 };
+      byDoc[f.doctor_id].count++;
+    }
+    const top = Object.entries(byDoc).sort((a, b) => b[1].count - a[1].count)[0];
+    const topPct = pct(top[1].count, g3findings.length);
+    g3Concentration = {
+      topDoctorId: Number(top[0]),
+      topDoctorName: top[1].name,
+      topCount: top[1].count,
+      topPct,
+      totalG3: g3findings.length,
+      isSystemic: topPct < 50,
+    };
+  }
+
+  // 4. Mix effect: % of findings from doctors with low concordance (<40%)
+  function computeLowPct(findings: DVFinding[]): number {
+    if (findings.length === 0) return 0;
+    const byDoc: Record<number, { g1: number; g2a: number; total: number }> = {};
+    for (const f of findings) {
+      if (!byDoc[f.doctor_id]) byDoc[f.doctor_id] = { g1: 0, g2a: 0, total: 0 };
+      byDoc[f.doctor_id].total++;
+      if (f.grade === "1") byDoc[f.doctor_id].g1++;
+      if (f.grade === "2a") byDoc[f.doctor_id].g2a++;
+    }
+    let lowFindings = 0;
+    for (const d of Object.values(byDoc)) {
+      const conc = d.total > 0 ? ((d.g1 + d.g2a) / d.total) * 100 : 0;
+      if (conc < 40) lowFindings += d.total;
+    }
+    return pct(lowFindings, findings.length);
+  }
+
+  const currLowPct = computeLowPct(periodFindings);
+  const prevLowPct = prevPeriodFindings ? computeLowPct(prevPeriodFindings) : null;
+
+  return {
+    g3TopCategories,
+    mipsTopMeasures,
+    g3Concentration,
+    mixEffect: {
+      currLowPct,
+      prevLowPct,
+      changed: prevLowPct !== null ? Math.round((currLowPct - prevLowPct) * 10) / 10 : null,
+    },
+  };
+}
+
+/** Top recurring failure categories for a single doctor */
+export function getDoctorRecurringPatterns(doctorId: number): {
+  g3Patterns: { category: string; count: number; discrepancyType: string }[];
+  mipsPatterns: { measure: string; label: string; count: number }[];
+} {
+  const findings = getDoctorFindings(doctorId);
+  const classified = getMIPSClassifiedFindings().filter((f) => f.doctor_id === doctorId);
+
+  const g3 = findings.filter((f) => f.grade === "3" || f.grade === "4");
+  const g3ByCat: Record<string, { count: number; types: string[] }> = {};
+  for (const f of g3) {
+    if (!g3ByCat[f.finding_category]) g3ByCat[f.finding_category] = { count: 0, types: [] };
+    g3ByCat[f.finding_category].count++;
+    if (!g3ByCat[f.finding_category].types.includes(f.discrepancy_type))
+      g3ByCat[f.finding_category].types.push(f.discrepancy_type);
+  }
+  const g3Patterns = Object.entries(g3ByCat)
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 5)
+    .map(([category, { count, types }]) => ({
+      category,
+      count,
+      discrepancyType: types.join(", "),
+    }));
+
+  const mipsByCat: Record<string, number> = {};
+  for (const f of classified) {
+    if (f.mips_related && f.mips_measure) {
+      mipsByCat[f.mips_measure] = (mipsByCat[f.mips_measure] ?? 0) + 1;
+    }
+  }
+  const mipsPatterns = Object.entries(mipsByCat)
+    .sort((a, b) => b[1] - a[1])
+    .map(([measure, count]) => ({
+      measure,
+      label: MIPS_MEASURE_LABELS[measure] ?? measure,
+      count,
+    }));
+
+  return { g3Patterns, mipsPatterns };
+}

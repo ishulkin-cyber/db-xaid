@@ -8,7 +8,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import type { GradeTrendPoint } from "@/lib/data";
+import type { GradeTrendPoint, RootCauseData } from "@/lib/data";
 import { PeriodSelector } from "@/components/PeriodSelector";
 import type { PeriodMode } from "@/lib/period";
 
@@ -99,11 +99,12 @@ interface Props {
   prevPoint: GradeTrendPoint | null;
   doctorImpact: DoctorImpact[];
   prevDoctorImpactMap: Record<number, DoctorImpact>;
+  rootCause: RootCauseData;
 }
 
 export function SvodClient({
   mode, ref_, compareEnabled, periodLabel, prevPeriodLabel,
-  trendData, currentPoint, prevPoint, doctorImpact, prevDoctorImpactMap,
+  trendData, currentPoint, prevPoint, doctorImpact, prevDoctorImpactMap, rootCause,
 }: Props) {
   const [targets, setTargets] = useState<Partial<Record<GradeKey, string>>>({});
   const [visible, setVisible] = useState<Record<GradeKey, boolean>>({
@@ -291,6 +292,129 @@ export function SvodClient({
         </CardContent>
       </Card>
 
+      {/* Root Cause Analysis */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Анализ причин</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Почему показатели не укладываются в цели
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+
+          {/* Row 1: G3+ categories + MIPS measures */}
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+
+            {/* G3+ top categories */}
+            <div>
+              <p className="text-sm font-semibold mb-2 flex items-center gap-2">
+                <span className="inline-block h-2 w-2 rounded-full bg-red-500" />
+                Топ категорий значимых пропусков (G3+)
+              </p>
+              {rootCause.g3TopCategories.length === 0 ? (
+                <p className="text-sm text-emerald-600">Нет G3+ за период ✓</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {rootCause.g3TopCategories.map(({ category, count, pct }) => (
+                    <div key={category} className="flex items-center gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between text-xs mb-0.5">
+                          <span className="truncate text-foreground">{category}</span>
+                          <span className="ml-2 text-muted-foreground shrink-0">{count} ({pct}%)</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-red-100 overflow-hidden">
+                          <div className="h-full rounded-full bg-red-400" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* MIPS top measures */}
+            <div>
+              <p className="text-sm font-semibold mb-2 flex items-center gap-2">
+                <span className="inline-block h-2 w-2 rounded-full bg-amber-700" />
+                Топ нарушений MIPS (2b-MIPS)
+              </p>
+              {rootCause.mipsTopMeasures.length === 0 ? (
+                <p className="text-sm text-emerald-600">Нет MIPS-нарушений за период ✓</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {rootCause.mipsTopMeasures.map(({ measure, label, count }) => (
+                    <div key={measure} className="flex items-center justify-between text-sm py-1 border-b last:border-0">
+                      <div>
+                        <span className="font-mono text-xs text-muted-foreground mr-2">{measure}</span>
+                        <span>{label}</span>
+                      </div>
+                      <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900 ml-2 shrink-0">
+                        {count}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Row 2: Concentration + Mix effect */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 pt-2 border-t">
+
+            {/* G3+ concentration */}
+            <div className="rounded-lg border p-4">
+              <p className="text-xs text-muted-foreground mb-1">Концентрация G3+</p>
+              {rootCause.g3Concentration === null ? (
+                <p className="text-sm text-emerald-600 font-medium">G3+ отсутствуют ✓</p>
+              ) : rootCause.g3Concentration.isSystemic ? (
+                <>
+                  <p className="text-sm font-semibold text-amber-700">⚠ Системная проблема</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    G3+ распределены между несколькими врачами. Лидер:{" "}
+                    <Link href={`/doctors/${rootCause.g3Concentration.topDoctorId}`} className="text-blue-600 hover:underline">
+                      {rootCause.g3Concentration.topDoctorName}
+                    </Link>{" "}
+                    ({rootCause.g3Concentration.topCount} из {rootCause.g3Concentration.totalG3}, {rootCause.g3Concentration.topPct}%)
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-semibold text-red-700">⚡ Индивидуальная проблема</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    <Link href={`/doctors/${rootCause.g3Concentration.topDoctorId}`} className="text-blue-600 hover:underline">
+                      {rootCause.g3Concentration.topDoctorName}
+                    </Link>{" "}
+                    отвечает за {rootCause.g3Concentration.topPct}% всех G3+ ({rootCause.g3Concentration.topCount} из {rootCause.g3Concentration.totalG3})
+                  </p>
+                </>
+              )}
+            </div>
+
+            {/* Mix effect */}
+            <div className="rounded-lg border p-4">
+              <p className="text-xs text-muted-foreground mb-1">Эффект состава</p>
+              <p className="text-sm font-semibold">
+                {rootCause.mixEffect.currLowPct}% находок
+                <span className="font-normal text-muted-foreground ml-1">
+                  от врачей с конкорд. &lt;40%
+                </span>
+              </p>
+              {rootCause.mixEffect.changed !== null && (
+                <p className={`text-xs mt-1 ${rootCause.mixEffect.changed > 0 ? "text-red-600" : "text-emerald-600"}`}>
+                  {rootCause.mixEffect.changed > 0 ? "▲" : "▼"}{Math.abs(rootCause.mixEffect.changed)}% vs {prevPeriodLabel}
+                  {rootCause.mixEffect.changed > 10 && (
+                    <span className="ml-1 text-amber-700">— объясняет часть снижения</span>
+                  )}
+                </p>
+              )}
+              {rootCause.mixEffect.currLowPct === 0 && (
+                <p className="text-xs text-emerald-600 mt-1">Все врачи выше порога ✓</p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Trend chart */}
       <Card>
         <CardHeader>
@@ -367,6 +491,85 @@ export function SvodClient({
                 ))}
               </LineChart>
             </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Period breakdown table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            Данные по{" "}
+            {mode === "week" ? "неделям" : mode === "month" ? "месяцам" : "годам"}
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Все периоды, от новых к старым
+          </p>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {trendData.length === 0 ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">Нет данных</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-muted-foreground">
+                    <th className="py-2 pr-6 text-left font-medium">Период</th>
+                    <th className="py-2 px-3 text-right font-medium">Находок</th>
+                    {ROWS.map((row) => (
+                      <th key={row.key} className="py-2 px-3 text-right font-medium whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1">
+                          <span
+                            className="inline-block h-2 w-2 rounded-sm flex-shrink-0"
+                            style={{ background: row.lineColor }}
+                          />
+                          {row.key === "clinConcordance" ? "Конкорд." :
+                           row.key === "g2bNonMipsPct" ? "G2b" :
+                           row.key === "g2bMipsPct" ? "2b-MIPS" : "G3+"}
+                        </span>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...trendData].reverse().map((p) => {
+                    const isCurrent = point?.period === p.period;
+                    return (
+                      <tr
+                        key={p.period}
+                        className={`border-b last:border-0 ${isCurrent ? "bg-indigo-50" : "hover:bg-muted/30"}`}
+                      >
+                        <td className={`py-2 pr-6 font-medium tabular-nums ${isCurrent ? "text-indigo-700" : ""}`}>
+                          {p.label}
+                          {isCurrent && (
+                            <span className="ml-2 text-xs text-indigo-500">← выбран</span>
+                          )}
+                        </td>
+                        <td className="py-2 px-3 text-right text-muted-foreground tabular-nums">
+                          {p.totalFindings}
+                        </td>
+                        {ROWS.map((row) => {
+                          const val = p[row.key];
+                          const isGood = row.higherIsBetter ? val >= 70 : val <= 10;
+                          const isBad  = row.higherIsBetter ? val < 40  : val > 20;
+                          return (
+                            <td key={row.key} className="py-2 px-3 text-right tabular-nums">
+                              <span className={
+                                isGood ? "text-emerald-600 font-medium" :
+                                isBad  ? "text-red-600 font-medium" :
+                                "text-muted-foreground"
+                              }>
+                                {val}%
+                              </span>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </CardContent>
       </Card>

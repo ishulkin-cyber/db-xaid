@@ -4,6 +4,8 @@ import {
   filterFindingsByDateRange,
   getDoctorStatsListFromFindings,
   getMIPS2bCountsByDoctor,
+  getRootCauseData,
+  type RootCauseData,
 } from "@/lib/data";
 import { SvodClient } from "@/components/svod/SvodClient";
 import {
@@ -81,13 +83,16 @@ export default function SvodPage({ searchParams }: { searchParams: SearchParams 
 
   // Previous period doctor impact for compare mode
   let prevDoctorImpactMap: Map<number, (typeof doctorImpact)[0]> = new Map();
+  let prevPeriodFindings: ReturnType<typeof filterFindingsByDateRange> | null = null;
   if (compareEnabled) {
-    const prevFindings      = filterFindingsByDateRange(allFindings, prevRange.start, prevRange.end);
-    const prevDoctors       = getDoctorStatsListFromFindings(prevFindings);
-    const prevMips2bByDoc   = getMIPS2bCountsByDoctor(prevFindings);
+    prevPeriodFindings      = filterFindingsByDateRange(allFindings, prevRange.start, prevRange.end);
+    const prevDoctors       = getDoctorStatsListFromFindings(prevPeriodFindings);
+    const prevMips2bByDoc   = getMIPS2bCountsByDoctor(prevPeriodFindings);
     const prevImpact        = buildImpact(prevDoctors, prevMips2bByDoc);
     prevDoctorImpactMap     = new Map(prevImpact.map((d) => [d.doctor_id, d]));
   }
+
+  const rootCause = getRootCauseData(periodFindings, prevPeriodFindings);
 
   return (
     <SvodClient
@@ -101,6 +106,7 @@ export default function SvodPage({ searchParams }: { searchParams: SearchParams 
       prevPoint={prevPoint}
       doctorImpact={doctorImpact}
       prevDoctorImpactMap={Object.fromEntries(prevDoctorImpactMap)}
+      rootCause={rootCause}
     />
   );
 }

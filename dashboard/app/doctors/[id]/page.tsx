@@ -7,6 +7,7 @@ import {
   getDoctorTrendByDate,
   getGradeDistribution,
   getAllDoctorIds,
+  getDoctorRecurringPatterns,
 } from "@/lib/data";
 import { gradeColors } from "@/lib/colors";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +44,7 @@ export default async function DoctorDetailPage({ params }: DoctorDetailPageProps
   const gradeData = getGradeDistribution(findings);
   const studies = getDoctorStudies(doctorId);
   const trend = getDoctorTrendByDate(doctorId);
+  const patterns = getDoctorRecurringPatterns(doctorId);
 
   const grades: Grade[] = ["1", "2a", "2b", "3", "4"];
 
@@ -186,6 +188,62 @@ export default async function DoctorDetailPage({ params }: DoctorDetailPageProps
           </Table>
         </CardContent>
       </Card>
+
+      {/* Recurring patterns */}
+      {(patterns.g3Patterns.length > 0 || patterns.mipsPatterns.length > 0) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Повторяющиеся паттерны</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Категории где врач системно допускает ошибки (по всем исследованиям)
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {patterns.g3Patterns.length > 0 && (
+              <div>
+                <p className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <span className="inline-block h-2 w-2 rounded-full bg-red-500" />
+                  Значимые пропуски G3+ по категориям
+                </p>
+                <div className="space-y-2">
+                  {patterns.g3Patterns.map(({ category, count, discrepancyType }) => (
+                    <div key={category} className="flex items-center justify-between rounded-lg border px-3 py-2">
+                      <div>
+                        <p className="text-sm font-medium">{category}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{discrepancyType}</p>
+                      </div>
+                      <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
+                        {count} раз
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {patterns.mipsPatterns.length > 0 && (
+              <div>
+                <p className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <span className="inline-block h-2 w-2 rounded-full bg-amber-700" />
+                  MIPS-нарушения по мерам
+                </p>
+                <div className="space-y-2">
+                  {patterns.mipsPatterns.map(({ measure, label, count }) => (
+                    <div key={measure} className="flex items-center justify-between rounded-lg border px-3 py-2">
+                      <div>
+                        <p className="text-sm font-medium">{label}</p>
+                        <p className="text-xs font-mono text-muted-foreground">{measure}</p>
+                      </div>
+                      <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                        {count} раз
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
