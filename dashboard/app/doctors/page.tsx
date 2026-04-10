@@ -84,7 +84,7 @@ interface SearchParams {
   compare?: string;
 }
 
-export default function DoctorsPage({
+export default async function DoctorsPage({
   searchParams,
 }: {
   searchParams: SearchParams;
@@ -101,7 +101,7 @@ export default function DoctorsPage({
   const prevRef = shiftPeriod(safeMode, ref, -1);
   const prevRange = getPeriodRange(safeMode, prevRef);
 
-  const allFindings = getDVFindings();
+  const allFindings = await getDVFindings();
   const currFindings = filterFindingsByDateRange(allFindings, range.start, range.end);
   const prevFindings = compareEnabled
     ? filterFindingsByDateRange(allFindings, prevRange.start, prevRange.end)
@@ -115,10 +115,10 @@ export default function DoctorsPage({
     ? getDoctorStatsListFromFindings(prevFindings)
     : null;
 
-  const mips2b = countMIPS2bInFindings(currFindings);
-  const mips2bByDoctor = getMIPS2bCountsByDoctor(currFindings);
-  const prevMips2bByDoctor = prevFindings
-    ? getMIPS2bCountsByDoctor(prevFindings)
+  const mips2b = await countMIPS2bInFindings(currFindings);
+  const mips2bByDoctor = await getMIPS2bCountsByDoctor(currFindings);
+  const prevMips2bByDoctor: Map<number, number> | null = prevFindings
+    ? await getMIPS2bCountsByDoctor(prevFindings)
     : null;
 
   const grade3Plus = stats.grade3 + stats.grade4;

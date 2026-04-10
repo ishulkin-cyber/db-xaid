@@ -6,7 +6,6 @@ import {
   getDoctorStudies,
   getDoctorTrendByDate,
   getGradeDistribution,
-  getAllDoctorIds,
   getDoctorRecurringPatterns,
 } from "@/lib/data";
 import { gradeColors } from "@/lib/colors";
@@ -25,9 +24,7 @@ import { GradeDistributionChart } from "@/components/doctors/GradeDistributionCh
 import { TopCategoriesChart } from "@/components/doctors/TopCategoriesChart";
 import type { Grade } from "@/lib/types";
 
-export async function generateStaticParams() {
-  return getAllDoctorIds().map((id) => ({ id: String(id) }));
-}
+export const dynamic = "force-dynamic";
 
 interface DoctorDetailPageProps {
   params: Promise<{ id: string }>;
@@ -36,15 +33,18 @@ interface DoctorDetailPageProps {
 export default async function DoctorDetailPage({ params }: DoctorDetailPageProps) {
   const { id } = await params;
   const doctorId = Number(id);
-  const doctor = getDoctorById(doctorId);
+
+  const [doctor, findings, studies, trend, patterns] = await Promise.all([
+    getDoctorById(doctorId),
+    getDoctorFindings(doctorId),
+    getDoctorStudies(doctorId),
+    getDoctorTrendByDate(doctorId),
+    getDoctorRecurringPatterns(doctorId),
+  ]);
 
   if (!doctor) notFound();
 
-  const findings = getDoctorFindings(doctorId);
   const gradeData = getGradeDistribution(findings);
-  const studies = getDoctorStudies(doctorId);
-  const trend = getDoctorTrendByDate(doctorId);
-  const patterns = getDoctorRecurringPatterns(doctorId);
 
   const grades: Grade[] = ["1", "2a", "2b", "3", "4"];
 

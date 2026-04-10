@@ -1,9 +1,13 @@
 import { getDVStudySummaries, getDoctorStatsList } from "@/lib/data";
+
+export const dynamic = "force-dynamic";
 import { DVStudyTable } from "@/components/studies/DVStudyTable";
 
-export default function StudiesPage() {
-  const summaries = getDVStudySummaries();
-  const doctors = getDoctorStatsList();
+export default async function StudiesPage() {
+  const [summaries, doctors] = await Promise.all([
+    getDVStudySummaries(),
+    getDoctorStatsList(),
+  ]);
 
   return (
     <div className="space-y-6">

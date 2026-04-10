@@ -5,7 +5,6 @@ import {
   getDoctorStatsListFromFindings,
   getMIPS2bCountsByDoctor,
   getRootCauseData,
-  type RootCauseData,
 } from "@/lib/data";
 import { SvodClient } from "@/components/svod/SvodClient";
 import {
@@ -29,7 +28,7 @@ interface SearchParams {
   compare?: string;
 }
 
-export default function SvodPage({ searchParams }: { searchParams: SearchParams }) {
+export default async function SvodPage({ searchParams }: { searchParams: SearchParams }) {
   const rawMode = searchParams.period ?? "month";
   const mode = (["week", "month", "year"].includes(rawMode) ? rawMode : "month") as PeriodMode;
 
@@ -40,7 +39,10 @@ export default function SvodPage({ searchParams }: { searchParams: SearchParams 
   const prevRef  = shiftPeriod(mode, ref, -1);
   const prevRange = getPeriodRange(mode, prevRef);
 
-  const allTrendData = getGradeTrendData(mode);
+  const [allTrendData, allFindings] = await Promise.all([
+    getGradeTrendData(mode),
+    getDVFindings(),
+  ]);
 
   const currentKey = toPeriodKey(ref, mode);
   const prevKey    = toPeriodKey(prevRef, mode);
@@ -50,11 +52,13 @@ export default function SvodPage({ searchParams }: { searchParams: SearchParams 
     ? (allTrendData.find((p) => p.period === prevKey) ?? null)
     : null;
 
-  // Doctor impact table — filtered to selected period
-  const allFindings    = getDVFindings();
   const periodFindings = filterFindingsByDateRange(allFindings, range.start, range.end);
-  const doctors        = getDoctorStatsListFromFindings(periodFindings);
-  const mips2bByDoctor = getMIPS2bCountsByDoctor(periodFindings);
+  const prevPeriodFindings: typeof periodFindings | null = compareEnabled
+    ? filterFindingsByDateRange(allFindings, prevRange.start, prevRange.end)
+    : null;
+
+  const doctors = getDoctorStatsListFromFindings(periodFindings);
+  const mips2bByDoctor = await getMIPS2bCountsByDoctor(periodFindings);
 
   function buildImpact(
     docList: ReturnType<typeof getDoctorStatsListFromFindings>,
@@ -81,18 +85,15 @@ export default function SvodPage({ searchParams }: { searchParams: SearchParams 
     .sort((a, b) => b.grade3plus - a.grade3plus || b.mips2b - a.mips2b)
     .slice(0, 7);
 
-  // Previous period doctor impact for compare mode
   let prevDoctorImpactMap: Map<number, (typeof doctorImpact)[0]> = new Map();
-  let prevPeriodFindings: ReturnType<typeof filterFindingsByDateRange> | null = null;
-  if (compareEnabled) {
-    prevPeriodFindings      = filterFindingsByDateRange(allFindings, prevRange.start, prevRange.end);
-    const prevDoctors       = getDoctorStatsListFromFindings(prevPeriodFindings);
-    const prevMips2bByDoc   = getMIPS2bCountsByDoctor(prevPeriodFindings);
-    const prevImpact        = buildImpact(prevDoctors, prevMips2bByDoc);
-    prevDoctorImpactMap     = new Map(prevImpact.map((d) => [d.doctor_id, d]));
+  if (compareEnabled && prevPeriodFindings) {
+    const prevDoctors     = getDoctorStatsListFromFindings(prevPeriodFindings);
+    const prevMips2bByDoc = await getMIPS2bCountsByDoctor(prevPeriodFindings);
+    const prevImpact      = buildImpact(prevDoctors, prevMips2bByDoc);
+    prevDoctorImpactMap   = new Map(prevImpact.map((d) => [d.doctor_id, d]));
   }
 
-  const rootCause = getRootCauseData(periodFindings, prevPeriodFindings);
+  const rootCause = await getRootCauseData(periodFindings, prevPeriodFindings);
 
   return (
     <SvodClient

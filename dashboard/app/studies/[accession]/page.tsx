@@ -1,14 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getStudyDetail, getAllAccessions } from "@/lib/data";
+import { getStudyDetail } from "@/lib/data";
 import { GradeBadge } from "@/components/studies/GradeBadge";
 import { DVFindingsTable } from "@/components/study-detail/DVFindingsTable";
 import { DVStudyHeader } from "@/components/study-detail/DVStudyHeader";
 import { DVStudyTabs } from "@/components/study-detail/DVStudyTabs";
 
-export async function generateStaticParams() {
-  return getAllAccessions().map((accession) => ({ accession }));
-}
+export const dynamic = "force-dynamic";
 
 interface StudyDetailPageProps {
   params: Promise<{ accession: string }>;
@@ -16,7 +14,7 @@ interface StudyDetailPageProps {
 
 export default async function StudyDetailPage({ params }: StudyDetailPageProps) {
   const { accession } = await params;
-  const { findings, pair, summary } = getStudyDetail(accession);
+  const { findings, pair, summary } = await getStudyDetail(accession);
 
   if (!summary) {
     return (

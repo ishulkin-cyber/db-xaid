@@ -1,5 +1,4 @@
-import fs from "fs";
-import path from "path";
+import { cache } from "react";
 import { parseISO, getISOWeek, getYear } from "date-fns";
 import type {
   DVFinding,
@@ -12,26 +11,82 @@ import type {
   DoctorMIPSStat,
 } from "./types";
 import { pct } from "./utils";
+import { readRepoJSON } from "./git-data";
 
-const dataDir = path.join(process.cwd(), "public", "data");
+// --- MIPS classifier (TypeScript port of analysis/classify_2b_mips.py) ---
 
-function readJSON<T>(filename: string): T {
-  const filePath = path.join(dataDir, filename);
-  const raw = fs.readFileSync(filePath, "utf-8");
-  return JSON.parse(raw) as T;
+type ClassifiedFinding = DVFinding & { mips_related: boolean; mips_measure: string | null };
+
+const ACRAD44_CATS = new Set(["coronary artery calcification","coronary calcification","coronary artery calcification severity","coronary and vascular calcification","coronary calcification impression detail","coronary calcification in findings section"]);
+const M364_CATS = new Set(["pulmonary nodule","pulmonary nodules","pulmonary micronodule","pulmonary micronodules","micronodules","scattered micronodules","left upper lobe nodule","left lower lobe nodule","right upper lobe nodule","fleischner recommendation","fleischner follow-up recommendation","fleischner applicability","fleischner recommendation — growth assessment","fleischner recommendation for rml nodule","pulmonary nodule follow-up recommendation","nodule follow-up recommendation","nodule growth assessment","part-solid nodule","ground glass nodule","perifissural nodules","solitary solid nodules","centrilobular micronodules / bronchiolitis","tree-in-bud nodules / bronchiolitis","prior nodule status","pulmonary cyst/nodule","pulmonary nodules — right lower lobe","lung-rads classification","lung cancer screening recommendation","centrilobular nodules"]);
+const M364_SUB = ["nodule","micronodule","fleischner","lung-rads"];
+const M405_CATS = new Set(["renal cyst","kidney cyst","left renal cyst","renal finding","adrenal gland finding","adrenal finding","left adrenal lesion","left adrenal gland thickening","left adrenal thickening"]);
+const M405_SUB = ["adrenal","bosniak","renal cyst","kidney cyst"];
+const M406_CATS = new Set(["thyroid nodule","thyroid finding","thyroid lesion","thyroid abnormality","left thyroid nodule","right thyroid lesion","thyroid nodules","substernal thyroid extension"]);
+const M406_SUB = ["thyroid"];
+const QMM23_CATS = new Set(["emphysema","centrilobular emphysema","small airways obstruction / copd","lung cancer screening recommendation"]);
+const QMM23_SUB = ["emphysema"];
+const NON_MIPS = ["coronary artery bypass grafting","cabg","left thyroid lobectomy","sternal sutures"];
+const QMM23_CONFIRM = ["ldct","lung cancer screening","independent risk factor","screening recommendation","low dose ct","low-dose ct"];
+
+function catMatches(cat: string, exact: Set<string>, subs: string[]): boolean {
+  if (exact.has(cat)) return true;
+  return subs.some((s) => cat.includes(s));
+}
+function notesConfirm(r: DVFinding, kw: string[]): boolean {
+  const t = [(r.notes ?? ""), (r.validator_description ?? ""), (r.doctor_description ?? "")].join(" ").toLowerCase();
+  return kw.some((k) => t.includes(k));
+}
+function classifyRecord(r: DVFinding): [boolean, string | null] {
+  const cat = (r.finding_category ?? "").toLowerCase().trim();
+  if (NON_MIPS.some((o) => cat.includes(o))) return [false, null];
+  if (catMatches(cat, ACRAD44_CATS, ["coronary"])) {
+    if (cat.includes("bypass") || cat.includes("cabg")) return [false, null];
+    return [true, "ACRad44"];
+  }
+  if (!cat.includes("thyroid") && catMatches(cat, M364_CATS, M364_SUB)) return [true, "364"];
+  if (catMatches(cat, M405_CATS, M405_SUB)) return [true, "405"];
+  if (catMatches(cat, M406_CATS, M406_SUB)) {
+    if (cat.includes("lobectomy") || (r.notes ?? "").toLowerCase().includes("lobectomy")) return [false, null];
+    return [true, "406"];
+  }
+  if (catMatches(cat, QMM23_CATS, QMM23_SUB)) {
+    return notesConfirm(r, QMM23_CONFIRM) ? [true, "QMM23"] : [false, null];
+  }
+  return [false, null];
 }
 
-// --- Raw data loaders ---
+// --- Raw data loaders (cached per request via React cache()) ---
 
-export function getDVFindings(): DVFinding[] {
-  return readJSON<DVFinding[]>("dv_findings.json");
-}
+// Reads findings from GitLab and joins exam_date from excel_reports.json
+export const getDVFindings = cache(async (): Promise<DVFinding[]> => {
+  const [raw, excel] = await Promise.all([
+    readRepoJSON<Omit<DVFinding, "exam_date">[]>("dv_combined_analysis.json"),
+    readRepoJSON<Record<string, { sheet_date?: string }>>("excel_reports.json"),
+  ]);
+  return raw.map((f) => ({
+    ...f,
+    exam_date: excel[f.accession_number]?.sheet_date ?? null,
+  } as DVFinding));
+});
 
-export function getDoctorValidatorPairs(): DoctorValidatorPair[] {
-  return readJSON<DoctorValidatorPair[]>("doctor_validator_pairs.json");
-}
+export const getDoctorValidatorPairs = cache(
+  (): Promise<DoctorValidatorPair[]> =>
+    readRepoJSON<DoctorValidatorPair[]>("doctor_validator_pairs.json")
+);
 
-// --- Period filtering ---
+// Derived in-memory from findings using the ported MIPS classifier
+export const getMIPSClassifiedFindings = cache(async (): Promise<ClassifiedFinding[]> => {
+  const findings = await getDVFindings();
+  return findings
+    .filter((f) => f.grade === "2b")
+    .map((f) => {
+      const [mips_related, mips_measure] = classifyRecord(f);
+      return { ...f, mips_related, mips_measure };
+    });
+});
+
+// --- Period filtering (sync, pure) ---
 
 export function filterFindingsByDateRange(
   findings: DVFinding[],
@@ -43,7 +98,7 @@ export function filterFindingsByDateRange(
   );
 }
 
-// --- Stats from pre-filtered findings (for period filtering) ---
+// --- Stats from pre-filtered findings (sync, pure) ---
 
 export function getOverallStatsFromFindings(findings: DVFinding[]) {
   const total = findings.length;
@@ -52,8 +107,8 @@ export function getOverallStatsFromFindings(findings: DVFinding[]) {
   const grade2b = findings.filter((f) => f.grade === "2b").length;
   const grade3  = findings.filter((f) => f.grade === "3").length;
   const grade4  = findings.filter((f) => f.grade === "4").length;
-  const totalStudies  = new Set(findings.map((f) => f.accession_number)).size;
-  const totalDoctors  = new Set(findings.map((f) => f.doctor_id)).size;
+  const totalStudies = new Set(findings.map((f) => f.accession_number)).size;
+  const totalDoctors = new Set(findings.map((f) => f.doctor_id)).size;
   return {
     totalStudies, totalDoctors, totalFindings: total,
     grade1, grade2a, grade2b, grade3, grade4,
@@ -97,12 +152,11 @@ export function getDoctorStatsListFromFindings(findings: DVFinding[]): DoctorSta
     .sort((a, b) => b.clinicalConcordance - a.clinicalConcordance);
 }
 
-// --- Grade distribution (for a given finding set) ---
+// --- Grade distribution (sync, requires findings) ---
 
 export function getGradeDistribution(
-  findings?: DVFinding[]
+  findings: DVFinding[]
 ): { grade: Grade; count: number; label: string }[] {
-  const source = findings ?? getDVFindings();
   const grades: { grade: Grade; label: string }[] = [
     { grade: "1", label: "Concordant" },
     { grade: "2a", label: "Minor Stylistic" },
@@ -112,36 +166,28 @@ export function getGradeDistribution(
   ];
   return grades.map(({ grade, label }) => ({
     grade,
-    count: source.filter((f) => f.grade === grade).length,
+    count: findings.filter((f) => f.grade === grade).length,
     label,
   }));
 }
 
 // --- Overall stats ---
 
-export function getOverallStats() {
-  const findings = getDVFindings();
+export async function getOverallStats() {
+  const findings = await getDVFindings();
   const total = findings.length;
-  const grade1 = findings.filter((f) => f.grade === "1").length;
+  const grade1  = findings.filter((f) => f.grade === "1").length;
   const grade2a = findings.filter((f) => f.grade === "2a").length;
   const grade2b = findings.filter((f) => f.grade === "2b").length;
-  const grade3 = findings.filter((f) => f.grade === "3").length;
-  const grade4 = findings.filter((f) => f.grade === "4").length;
-
+  const grade3  = findings.filter((f) => f.grade === "3").length;
+  const grade4  = findings.filter((f) => f.grade === "4").length;
   const allAccessions = [...new Set(findings.map((f) => f.accession_number))];
   const totalStudies = allAccessions.length;
   const allDoctorIds = [...new Set(findings.map((f) => f.doctor_id))];
   const totalDoctors = allDoctorIds.length;
-
   return {
-    totalStudies,
-    totalDoctors,
-    totalFindings: total,
-    grade1,
-    grade2a,
-    grade2b,
-    grade3,
-    grade4,
+    totalStudies, totalDoctors, totalFindings: total,
+    grade1, grade2a, grade2b, grade3, grade4,
     concordance: pct(grade1, total),
     clinicalConcordance: pct(grade1 + grade2a, total),
     significantRate: pct(grade3 + grade4, total),
@@ -150,23 +196,20 @@ export function getOverallStats() {
 
 // --- Doctor stats list (leaderboard) ---
 
-export function getDoctorStatsList(): DoctorStats[] {
-  const findings = getDVFindings();
+export async function getDoctorStatsList(): Promise<DoctorStats[]> {
+  const findings = await getDVFindings();
   const doctorIds = [...new Set(findings.map((f) => f.doctor_id))];
-
   return doctorIds
     .map((id) => {
       const doctorFindings = findings.filter((f) => f.doctor_id === id);
       const doctorName = doctorFindings[0]?.doctor_name ?? String(id);
       const accessions = [...new Set(doctorFindings.map((f) => f.accession_number))];
       const total = doctorFindings.length;
-      const g1 = doctorFindings.filter((f) => f.grade === "1").length;
+      const g1  = doctorFindings.filter((f) => f.grade === "1").length;
       const g2a = doctorFindings.filter((f) => f.grade === "2a").length;
       const g2b = doctorFindings.filter((f) => f.grade === "2b").length;
-      const g3 = doctorFindings.filter((f) => f.grade === "3").length;
-      const g4 = doctorFindings.filter((f) => f.grade === "4").length;
-
-      // Top error categories (non-concordant findings)
+      const g3  = doctorFindings.filter((f) => f.grade === "3").length;
+      const g4  = doctorFindings.filter((f) => f.grade === "4").length;
       const errorFindings = doctorFindings.filter((f) => f.grade !== "1");
       const catCounts: Record<string, number> = {};
       for (const f of errorFindings) {
@@ -176,17 +219,10 @@ export function getDoctorStatsList(): DoctorStats[] {
         .map(([category, count]) => ({ category, count }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 5);
-
       return {
-        doctor_id: id,
-        doctor_name: doctorName,
-        total_studies: accessions.length,
-        total_findings: total,
-        grade1: g1,
-        grade2a: g2a,
-        grade2b: g2b,
-        grade3: g3,
-        grade4: g4,
+        doctor_id: id, doctor_name: doctorName,
+        total_studies: accessions.length, total_findings: total,
+        grade1: g1, grade2a: g2a, grade2b: g2b, grade3: g3, grade4: g4,
         concordance: pct(g1, total),
         clinicalConcordance: pct(g1 + g2a, total),
         significantRate: pct(g3 + g4, total),
@@ -198,21 +234,23 @@ export function getDoctorStatsList(): DoctorStats[] {
 
 // --- Doctor by ID ---
 
-export function getDoctorById(id: number): DoctorStats | undefined {
-  return getDoctorStatsList().find((d) => d.doctor_id === id);
+export async function getDoctorById(id: number): Promise<DoctorStats | undefined> {
+  return (await getDoctorStatsList()).find((d) => d.doctor_id === id);
 }
 
 // --- Doctor findings ---
 
-export function getDoctorFindings(doctorId: number): DVFinding[] {
-  return getDVFindings().filter((f) => f.doctor_id === doctorId);
+export async function getDoctorFindings(doctorId: number): Promise<DVFinding[]> {
+  return (await getDVFindings()).filter((f) => f.doctor_id === doctorId);
 }
 
 // --- Doctor studies list ---
 
-export function getDoctorStudies(doctorId: number): DVStudySummary[] {
-  const findings = getDoctorFindings(doctorId);
-  const classified = getMIPSClassifiedFindings();
+export async function getDoctorStudies(doctorId: number): Promise<DVStudySummary[]> {
+  const [findings, classified] = await Promise.all([
+    getDoctorFindings(doctorId),
+    getMIPSClassifiedFindings(),
+  ]);
   const mipsAccMap = new Map<string, number>();
   for (const cf of classified) {
     if (cf.mips_related) {
@@ -220,45 +258,33 @@ export function getDoctorStudies(doctorId: number): DVStudySummary[] {
     }
   }
   const accessions = [...new Set(findings.map((f) => f.accession_number))];
-
   return accessions.map((acc) => {
     const accFindings = findings.filter((f) => f.accession_number === acc);
     const doctorName = accFindings[0]?.doctor_name ?? "";
     const total = accFindings.length;
-    const g1 = accFindings.filter((f) => f.grade === "1").length;
+    const g1  = accFindings.filter((f) => f.grade === "1").length;
     const g2a = accFindings.filter((f) => f.grade === "2a").length;
     const g2b = accFindings.filter((f) => f.grade === "2b").length;
-    const g3 = accFindings.filter((f) => f.grade === "3").length;
-    const g4 = accFindings.filter((f) => f.grade === "4").length;
+    const g3  = accFindings.filter((f) => f.grade === "3").length;
+    const g4  = accFindings.filter((f) => f.grade === "4").length;
     const discrepancies = accFindings.filter((f) => f.grade !== "1").length;
     const mips2b = mipsAccMap.get(acc) ?? 0;
-
-    // Determine overall grade: worst grade present
     let overallGrade: Grade | "N/A" = "N/A";
     if (g4 > 0) overallGrade = "4";
     else if (g3 > 0) overallGrade = "3";
     else if (g2b > 0) overallGrade = "2b";
     else if (g2a > 0) overallGrade = "2a";
     else if (g1 > 0) overallGrade = "1";
-
     const keyDiscrepancies = accFindings
       .filter((f) => f.grade === "3" || f.grade === "4")
       .map((f) => f.finding_category)
       .slice(0, 3);
-
     return {
-      accession_number: acc,
-      doctor_name: doctorName,
-      doctor_id: doctorId,
-      overall_grade: overallGrade,
-      total_findings: total,
-      concordant_count: g1,
-      stylistic_count: g2a,
-      minor_clinical_count: g2b,
-      significant_underreport_count: g3,
-      significant_overreport_count: g4,
-      discrepancy_count: discrepancies,
-      mips2b_count: mips2b,
+      accession_number: acc, doctor_name: doctorName, doctor_id: doctorId,
+      overall_grade: overallGrade, total_findings: total,
+      concordant_count: g1, stylistic_count: g2a, minor_clinical_count: g2b,
+      significant_underreport_count: g3, significant_overreport_count: g4,
+      discrepancy_count: discrepancies, mips2b_count: mips2b,
       key_discrepancies: keyDiscrepancies,
     } satisfies DVStudySummary;
   });
@@ -266,42 +292,36 @@ export function getDoctorStudies(doctorId: number): DVStudySummary[] {
 
 // --- Doctor trend by date ---
 
-export function getDoctorTrendByDate(doctorId: number): TrendDataPoint[] {
-  const findings = getDoctorFindings(doctorId);
+export async function getDoctorTrendByDate(doctorId: number): Promise<TrendDataPoint[]> {
+  const findings = await getDoctorFindings(doctorId);
   const findingsWithDate = findings.filter((f) => f.exam_date);
-
   if (findingsWithDate.length === 0) return [];
-
   const dates = [...new Set(findingsWithDate.map((f) => f.exam_date as string))].sort();
-
   return dates.map((date) => {
     const dayFindings = findingsWithDate.filter((f) => f.exam_date === date);
     const total = dayFindings.length;
-    const g1 = dayFindings.filter((f) => f.grade === "1").length;
+    const g1  = dayFindings.filter((f) => f.grade === "1").length;
     const g2a = dayFindings.filter((f) => f.grade === "2a").length;
     const g2b = dayFindings.filter((f) => f.grade === "2b").length;
-    const g3 = dayFindings.filter((f) => f.grade === "3").length;
-    const g4 = dayFindings.filter((f) => f.grade === "4").length;
-
+    const g3  = dayFindings.filter((f) => f.grade === "3").length;
+    const g4  = dayFindings.filter((f) => f.grade === "4").length;
     return {
       date,
       concordance: pct(g1, total),
       clinicalConcordance: pct(g1 + g2a, total),
       totalFindings: total,
-      grade1: g1,
-      grade2a: g2a,
-      grade2b: g2b,
-      grade3: g3,
-      grade4: g4,
+      grade1: g1, grade2a: g2a, grade2b: g2b, grade3: g3, grade4: g4,
     };
   });
 }
 
-// --- All study summaries (for studies list page) ---
+// --- All study summaries ---
 
-export function getDVStudySummaries(): DVStudySummary[] {
-  const findings = getDVFindings();
-  const classified = getMIPSClassifiedFindings();
+export async function getDVStudySummaries(): Promise<DVStudySummary[]> {
+  const [findings, classified] = await Promise.all([
+    getDVFindings(),
+    getMIPSClassifiedFindings(),
+  ]);
   const mipsAccMap = new Map<string, number>();
   for (const cf of classified) {
     if (cf.mips_related) {
@@ -309,45 +329,34 @@ export function getDVStudySummaries(): DVStudySummary[] {
     }
   }
   const accessions = [...new Set(findings.map((f) => f.accession_number))];
-
   return accessions.map((acc) => {
     const accFindings = findings.filter((f) => f.accession_number === acc);
     const doctorName = accFindings[0]?.doctor_name ?? "";
     const doctorId = accFindings[0]?.doctor_id ?? 0;
     const total = accFindings.length;
-    const g1 = accFindings.filter((f) => f.grade === "1").length;
+    const g1  = accFindings.filter((f) => f.grade === "1").length;
     const g2a = accFindings.filter((f) => f.grade === "2a").length;
     const g2b = accFindings.filter((f) => f.grade === "2b").length;
-    const g3 = accFindings.filter((f) => f.grade === "3").length;
-    const g4 = accFindings.filter((f) => f.grade === "4").length;
+    const g3  = accFindings.filter((f) => f.grade === "3").length;
+    const g4  = accFindings.filter((f) => f.grade === "4").length;
     const discrepancies = accFindings.filter((f) => f.grade !== "1").length;
     const mips2b = mipsAccMap.get(acc) ?? 0;
-
     let overallGrade: Grade | "N/A" = "N/A";
     if (g4 > 0) overallGrade = "4";
     else if (g3 > 0) overallGrade = "3";
     else if (g2b > 0) overallGrade = "2b";
     else if (g2a > 0) overallGrade = "2a";
     else if (g1 > 0) overallGrade = "1";
-
     const keyDiscrepancies = accFindings
       .filter((f) => f.grade === "3" || f.grade === "4")
       .map((f) => f.finding_category)
       .slice(0, 3);
-
     return {
-      accession_number: acc,
-      doctor_name: doctorName,
-      doctor_id: doctorId,
-      overall_grade: overallGrade,
-      total_findings: total,
-      concordant_count: g1,
-      stylistic_count: g2a,
-      minor_clinical_count: g2b,
-      significant_underreport_count: g3,
-      significant_overreport_count: g4,
-      discrepancy_count: discrepancies,
-      mips2b_count: mips2b,
+      accession_number: acc, doctor_name: doctorName, doctor_id: doctorId,
+      overall_grade: overallGrade, total_findings: total,
+      concordant_count: g1, stylistic_count: g2a, minor_clinical_count: g2b,
+      significant_underreport_count: g3, significant_overreport_count: g4,
+      discrepancy_count: discrepancies, mips2b_count: mips2b,
       key_discrepancies: keyDiscrepancies,
     } satisfies DVStudySummary;
   });
@@ -355,32 +364,36 @@ export function getDVStudySummaries(): DVStudySummary[] {
 
 // --- Study detail ---
 
-export function getStudyDetail(accession: string) {
-  const findings = getDVFindings().filter((f) => f.accession_number === accession);
-  const pair = getDoctorValidatorPairs().find((p) => p.accession_number === accession);
-  const summaries = getDVStudySummaries();
-  const summary = summaries.find((s) => s.accession_number === accession);
-  return { findings, pair, summary };
+export async function getStudyDetail(accession: string) {
+  const [findings, pairs, summaries] = await Promise.all([
+    getDVFindings(),
+    getDoctorValidatorPairs(),
+    getDVStudySummaries(),
+  ]);
+  return {
+    findings: findings.filter((f) => f.accession_number === accession),
+    pair: pairs.find((p) => p.accession_number === accession),
+    summary: summaries.find((s) => s.accession_number === accession),
+  };
 }
 
 // --- Static params helpers ---
 
-export function getAllAccessions(): string[] {
-  const findings = getDVFindings();
+export async function getAllAccessions(): Promise<string[]> {
+  const findings = await getDVFindings();
   return [...new Set(findings.map((f) => f.accession_number))];
 }
 
-export function getAllDoctorIds(): number[] {
-  const findings = getDVFindings();
+export async function getAllDoctorIds(): Promise<number[]> {
+  const findings = await getDVFindings();
   return [...new Set(findings.map((f) => f.doctor_id))];
 }
 
 // --- Category stats ---
 
-export function getCategoryStats() {
-  const findings = getDVFindings();
+export async function getCategoryStats() {
+  const findings = await getDVFindings();
   const categories = [...new Set(findings.map((f) => f.finding_category))];
-
   return categories
     .map((cat) => {
       const catFindings = findings.filter((f) => f.finding_category === cat);
@@ -401,16 +414,16 @@ export interface CategoryDetailedStat {
   g3PlusPct: number;
 }
 
-export function getCategoryDetailedStats(): CategoryDetailedStat[] {
-  const source = getDVFindings();
+export async function getCategoryDetailedStats(): Promise<CategoryDetailedStat[]> {
+  const source = await getDVFindings();
   const cats = [...new Set(source.map((f) => f.finding_category))];
   return cats
     .map((cat) => {
       const cf = source.filter((f) => f.finding_category === cat);
       const total = cf.length;
       const g2b = cf.filter((f) => f.grade === "2b").length;
-      const g3 = cf.filter((f) => f.grade === "3").length;
-      const g4 = cf.filter((f) => f.grade === "4").length;
+      const g3  = cf.filter((f) => f.grade === "3").length;
+      const g4  = cf.filter((f) => f.grade === "4").length;
       return { category: cat, total, g2bPct: pct(g2b, total), g3PlusPct: pct(g3 + g4, total) };
     })
     .sort((a, b) => b.g3PlusPct - a.g3PlusPct);
@@ -448,19 +461,15 @@ export interface GradeTrendPoint {
   totalFindings: number;
 }
 
-export function getGradeTrendData(mode: "week" | "month" | "year" = "month"): GradeTrendPoint[] {
-  const source = getDVFindings().filter((f) => f.exam_date);
-  const classified = getMIPSClassifiedFindings();
-  // Build set of accession_numbers that have mips findings per period
-  const mipsAccSet = new Set(classified.filter((f) => f.mips_related).map((f) => f.accession_number));
-  // Build mips count by exam_date key
+export async function getGradeTrendData(mode: "week" | "month" | "year" = "month"): Promise<GradeTrendPoint[]> {
+  const [allFindings, classified] = await Promise.all([getDVFindings(), getMIPSClassifiedFindings()]);
+  const source = allFindings.filter((f) => f.exam_date);
   const mipsGroups: Record<string, number> = {};
   for (const cf of classified) {
     if (!cf.mips_related || !cf.exam_date) continue;
     const key = toPeriodKey(cf.exam_date, mode);
     mipsGroups[key] = (mipsGroups[key] ?? 0) + 1;
   }
-
   const groups: Record<string, DVFinding[]> = {};
   for (const f of source) {
     const key = toPeriodKey(f.exam_date!, mode);
@@ -494,30 +503,22 @@ export function getGradeTrendData(mode: "week" | "month" | "year" = "month"): Gr
 
 // --- MIPS ---
 
-type ClassifiedFinding = DVFinding & { mips_related: boolean; mips_measure: string | null };
-
 const MIPS_MEASURE_LABELS: Record<string, string> = {
   ACRad44: "Коронарный кальциноз",
-  "364":    "Узлы лёгкого / Fleischner",
-  "405":    "Доброкач. абдоминальные",
-  "406":    "Узлы щитовидки",
-  QMM23:   "Эмфизема + LDCT",
+  "364":   "Узлы лёгкого / Fleischner",
+  "405":   "Доброкач. абдоминальные",
+  "406":   "Узлы щитовидки",
+  QMM23:  "Эмфизема + LDCT",
 };
 
-export function getMIPSClassifiedFindings(): ClassifiedFinding[] {
-  return readJSON<ClassifiedFinding[]>("dv_findings_2b_classified.json");
-}
-
-export function countMIPS2bInFindings(findings: DVFinding[]): number {
-  const classified = getMIPSClassifiedFindings();
+export async function countMIPS2bInFindings(findings: DVFinding[]): Promise<number> {
+  const classified = await getMIPSClassifiedFindings();
   const accessions = new Set(findings.map((f) => f.accession_number));
-  return classified.filter(
-    (f) => f.mips_related && accessions.has(f.accession_number)
-  ).length;
+  return classified.filter((f) => f.mips_related && accessions.has(f.accession_number)).length;
 }
 
-export function getMIPS2bCountsByDoctor(findings: DVFinding[]): Map<number, number> {
-  const classified = getMIPSClassifiedFindings();
+export async function getMIPS2bCountsByDoctor(findings: DVFinding[]): Promise<Map<number, number>> {
+  const classified = await getMIPSClassifiedFindings();
   const accessions = new Set(findings.map((f) => f.accession_number));
   const result = new Map<number, number>();
   for (const cf of classified) {
@@ -528,7 +529,7 @@ export function getMIPS2bCountsByDoctor(findings: DVFinding[]): Map<number, numb
   return result;
 }
 
-export function getMIPSOverallStats(): {
+export async function getMIPSOverallStats(): Promise<{
   total949: number;
   total2b: number;
   mips2b: number;
@@ -536,9 +537,8 @@ export function getMIPSOverallStats(): {
   mipsPctOfAll: number;
   mipsPctOf2b: number;
   byMeasure: MIPSStat[];
-} {
-  const all = getDVFindings();
-  const classified = getMIPSClassifiedFindings();
+}> {
+  const [all, classified] = await Promise.all([getDVFindings(), getMIPSClassifiedFindings()]);
   const total949 = all.length;
   const total2b = classified.length;
   const mipsFindings = classified.filter((f) => f.mips_related);
@@ -561,8 +561,8 @@ export function getMIPSOverallStats(): {
   return { total949, total2b, mips2b, nonMips2b, mipsPctOfAll: pct(mips2b, total949), mipsPctOf2b: pct(mips2b, total2b), byMeasure };
 }
 
-export function getMIPSByDoctor(): DoctorMIPSStat[] {
-  const classified = getMIPSClassifiedFindings();
+export async function getMIPSByDoctor(): Promise<DoctorMIPSStat[]> {
+  const classified = await getMIPSClassifiedFindings();
   const doctorIds = [...new Set(classified.map((f) => f.doctor_id))];
   return doctorIds
     .map((id) => {
@@ -584,11 +584,8 @@ export function getMIPSByDoctor(): DoctorMIPSStat[] {
 // --- Root cause analysis ---
 
 export interface RootCauseData {
-  /** Top G3+ finding categories */
   g3TopCategories: { category: string; count: number; pct: number }[];
-  /** Top 2b-MIPS measures violated this period */
   mipsTopMeasures: { measure: string; label: string; count: number }[];
-  /** Who is responsible for G3+ — individual vs systemic signal */
   g3Concentration: {
     topDoctorId: number;
     topDoctorName: string;
@@ -597,7 +594,6 @@ export interface RootCauseData {
     totalG3: number;
     isSystemic: boolean;
   } | null;
-  /** % of findings from doctors with concordance <40% */
   mixEffect: {
     currLowPct: number;
     prevLowPct: number | null;
@@ -605,14 +601,13 @@ export interface RootCauseData {
   };
 }
 
-export function getRootCauseData(
+export async function getRootCauseData(
   periodFindings: DVFinding[],
   prevPeriodFindings: DVFinding[] | null,
-): RootCauseData {
-  const classified = getMIPSClassifiedFindings();
+): Promise<RootCauseData> {
+  const classified = await getMIPSClassifiedFindings();
   const periodAccessions = new Set(periodFindings.map((f) => f.accession_number));
 
-  // 1. Top G3+ categories
   const g3findings = periodFindings.filter((f) => f.grade === "3" || f.grade === "4");
   const g3ByCat: Record<string, number> = {};
   for (const f of g3findings) {
@@ -621,13 +616,8 @@ export function getRootCauseData(
   const g3TopCategories = Object.entries(g3ByCat)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6)
-    .map(([category, count]) => ({
-      category,
-      count,
-      pct: pct(count, g3findings.length),
-    }));
+    .map(([category, count]) => ({ category, count, pct: pct(count, g3findings.length) }));
 
-  // 2. Top MIPS measures
   const mipsByMeasure: Record<string, number> = {};
   for (const cf of classified) {
     if (cf.mips_related && cf.mips_measure && periodAccessions.has(cf.accession_number)) {
@@ -636,13 +626,8 @@ export function getRootCauseData(
   }
   const mipsTopMeasures = Object.entries(mipsByMeasure)
     .sort((a, b) => b[1] - a[1])
-    .map(([measure, count]) => ({
-      measure,
-      label: MIPS_MEASURE_LABELS[measure] ?? measure,
-      count,
-    }));
+    .map(([measure, count]) => ({ measure, label: MIPS_MEASURE_LABELS[measure] ?? measure, count }));
 
-  // 3. G3+ concentration
   let g3Concentration: RootCauseData["g3Concentration"] = null;
   if (g3findings.length > 0) {
     const byDoc: Record<number, { name: string; count: number }> = {};
@@ -662,7 +647,6 @@ export function getRootCauseData(
     };
   }
 
-  // 4. Mix effect: % of findings from doctors with low concordance (<40%)
   function computeLowPct(findings: DVFinding[]): number {
     if (findings.length === 0) return 0;
     const byDoc: Record<number, { g1: number; g2a: number; total: number }> = {};
@@ -695,13 +679,17 @@ export function getRootCauseData(
   };
 }
 
-/** Top recurring failure categories for a single doctor */
-export function getDoctorRecurringPatterns(doctorId: number): {
+// --- Doctor recurring patterns ---
+
+export async function getDoctorRecurringPatterns(doctorId: number): Promise<{
   g3Patterns: { category: string; count: number; discrepancyType: string }[];
   mipsPatterns: { measure: string; label: string; count: number }[];
-} {
-  const findings = getDoctorFindings(doctorId);
-  const classified = getMIPSClassifiedFindings().filter((f) => f.doctor_id === doctorId);
+}> {
+  const [findings, classified] = await Promise.all([
+    getDoctorFindings(doctorId),
+    getMIPSClassifiedFindings(),
+  ]);
+  const classifiedForDoctor = classified.filter((f) => f.doctor_id === doctorId);
 
   const g3 = findings.filter((f) => f.grade === "3" || f.grade === "4");
   const g3ByCat: Record<string, { count: number; types: string[] }> = {};
@@ -714,25 +702,17 @@ export function getDoctorRecurringPatterns(doctorId: number): {
   const g3Patterns = Object.entries(g3ByCat)
     .sort((a, b) => b[1].count - a[1].count)
     .slice(0, 5)
-    .map(([category, { count, types }]) => ({
-      category,
-      count,
-      discrepancyType: types.join(", "),
-    }));
+    .map(([category, { count, types }]) => ({ category, count, discrepancyType: types.join(", ") }));
 
   const mipsByCat: Record<string, number> = {};
-  for (const f of classified) {
+  for (const f of classifiedForDoctor) {
     if (f.mips_related && f.mips_measure) {
       mipsByCat[f.mips_measure] = (mipsByCat[f.mips_measure] ?? 0) + 1;
     }
   }
   const mipsPatterns = Object.entries(mipsByCat)
     .sort((a, b) => b[1] - a[1])
-    .map(([measure, count]) => ({
-      measure,
-      label: MIPS_MEASURE_LABELS[measure] ?? measure,
-      count,
-    }));
+    .map(([measure, count]) => ({ measure, label: MIPS_MEASURE_LABELS[measure] ?? measure, count }));
 
   return { g3Patterns, mipsPatterns };
 }
