@@ -1,0 +1,135 @@
+{
+  "doctor_name": "Астахов Юрий",
+  "doctor_id": 21,
+  "total_studies": 6,
+  "total_missed_pathologies": 14,
+  "misses": [
+    {
+      "accession_number": "49569905",
+      "missed_finding": "Left ventricular enlargement",
+      "anatomical_location": "Heart",
+      "category": "cardiac",
+      "clinical_significance": "medium",
+      "validator_text": "No cardiomegaly is identified, left ventricular enlargement."
+    },
+    {
+      "accession_number": "49569905",
+      "missed_finding": "Decreased vertebral body density consistent with osteoporosis (T11 - 140 HU, T12 - 120 HU, L2 - 107 HU)",
+      "anatomical_location": "Thoracolumbar spine",
+      "category": "bone density",
+      "clinical_significance": "medium",
+      "validator_text": "Decrease in vertebral body density: T11 - 140 HU, T12 - 120 HU, L2 - 107 HU."
+    },
+    {
+      "accession_number": "49567143",
+      "missed_finding": "Decreased vertebral body density consistent with osteoporosis (T11 - 103 HU, T12 - 90 HU, L1 - 90 HU)",
+      "anatomical_location": "Thoracolumbar spine",
+      "category": "bone density",
+      "clinical_significance": "medium",
+      "validator_text": "Decreased density of vertebral bodies: T11 - 103 HU, T12 - 90 HU, L1 - 90 HU."
+    },
+    {
+      "accession_number": "49567143",
+      "missed_finding": "Degenerative changes of shoulder joints",
+      "anatomical_location": "Shoulder joints",
+      "category": "degenerative",
+      "clinical_significance": "low",
+      "validator_text": "Moderate degenerative changes in the spine and shoulder joints."
+    },
+    {
+      "accession_number": "49165878",
+      "missed_finding": "Mitral valve calcification",
+      "anatomical_location": "Heart, mitral valve",
+      "category": "cardiac",
+      "clinical_significance": "medium",
+      "validator_text": "Severe coronary calcification, aortic and mitral valve calcification"
+    },
+    {
+      "accession_number": "49165878",
+      "missed_finding": "Mild osteoarthritis of the shoulders",
+      "anatomical_location": "Shoulder joints",
+      "category": "degenerative",
+      "clinical_significance": "low",
+      "validator_text": "Mild osteoarthritis of the shoulders."
+    },
+    {
+      "accession_number": "49165878",
+      "missed_finding": "Multiple healed rib fractures",
+      "anatomical_location": "Ribs",
+      "category": "bone lesion",
+      "clinical_significance": "medium",
+      "validator_text": "Multiple healed rib fractures."
+    },
+    {
+      "accession_number": "49165878",
+      "missed_finding": "Bilateral gynecomastia",
+      "anatomical_location": "Chest wall, bilateral breast tissue",
+      "category": "soft tissue",
+      "clinical_significance": "low",
+      "validator_text": "Bilateral gynecomastia."
+    },
+    {
+      "accession_number": "49165878",
+      "missed_finding": "Decreased vertebral body density with specific HU values (T11 - 127, T12 - 124, L1 - 108, L2 - 116)",
+      "anatomical_location": "Thoracolumbar spine",
+      "category": "bone density",
+      "clinical_significance": "low",
+      "validator_text": "Decrease in vertebral body density: T11 - 127 HU, T12 - 124 HU, L1 - 108 HU, L2 - 116 HU."
+    },
+    {
+      "accession_number": "49411957",
+      "missed_finding": "Small tracheal diverticulum",
+      "anatomical_location": "Trachea",
+      "category": "airway",
+      "clinical_significance": "low",
+      "validator_text": "Small tracheal diverticulum."
+    },
+    {
+      "accession_number": "49411957",
+      "missed_finding": "Air trapping in lower lobes",
+      "anatomical_location": "Lungs, lower lobes",
+      "category": "parenchymal",
+      "clinical_significance": "medium",
+      "validator_text": "In the basal lungs there are areas of ground-glass opacity with air trapping."
+    },
+    {
+      "accession_number": "49411957",
+      "missed_finding": "Mild aortic wall calcification",
+      "anatomical_location": "Aorta",
+      "category": "vascular",
+      "clinical_significance": "low",
+      "validator_text": "Thoracic aorta normal in caliber with mild wall calcifications."
+    },
+    {
+      "accession_number": "49461627",
+      "missed_finding": "Residual reticulations in right lower lobe after resolution of tree-in-bud opacities",
+      "anatomical_location": "Right lower lobe",
+      "category": "parenchymal",
+      "clinical_significance": "low",
+      "validator_text": "Previously seen tree-in-bud opacities in the peripheral right lower lobe with surrounding ground glass partially resolved, residual reticulations."
+    },
+    {
+      "accession_number": "49461627",
+      "missed_finding": "Bilateral adrenal adenomas (doctor noted only left adrenal thickening, missed right adrenal lesion and characterization as adenomas)",
+      "anatomical_location": "Adrenal glands, bilateral",
+      "category": "soft tissue",
+      "clinical_significance": "medium",
+      "validator_text": "benign lesions of both adrenal glands (adenomas), no additional workup or follow-up imaging is needed."
+    }
+  ],
+  "summary_by_category": {
+    "bone density": 3,
+    "cardiac": 2,
+    "degenerative": 2,
+    "soft tissue": 2,
+    "parenchymal": 2,
+    "bone lesion": 1,
+    "airway": 1,
+    "vascular": 1
+  },
+  "summary_by_significance": {
+    "low": 7,
+    "medium": 7,
+    "high": 0
+  }
+}

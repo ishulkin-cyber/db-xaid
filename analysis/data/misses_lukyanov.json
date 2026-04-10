@@ -1,0 +1,187 @@
+{
+  "doctor_name": "Лукьянов Дмитрий",
+  "doctor_id": 16,
+  "total_studies": 18,
+  "total_missed_pathologies": 21,
+  "methodology": "Only counted NEW findings added by the validator (Kokina) that were completely absent from the doctor's report. Excluded: wording/severity changes, reformulations, template language (Fleischner, ACR recommendations), measurement precision differences, stylistic differences.",
+  "breakdown_by_category": {
+    "nodule": 3,
+    "bone_lesion": 4,
+    "vascular": 2,
+    "soft_tissue": 3,
+    "interstitial_lung": 3,
+    "gastrointestinal": 3,
+    "cardiac": 2,
+    "breast": 1
+  },
+  "misses": [
+    {
+      "accession_number": "49572282",
+      "missed_finding": "Bilateral micronodules up to 2 mm",
+      "anatomical_location": "Both lungs",
+      "category": "nodule",
+      "clinical_significance": "low",
+      "validator_text": "Few micronodules on the both sides (up to 2 mm)."
+    },
+    {
+      "accession_number": "49572282",
+      "missed_finding": "Subpleural reticulation and ground glass in right lower lobe (interstitial changes)",
+      "anatomical_location": "Right lower lobe",
+      "category": "interstitial_lung",
+      "clinical_significance": "low",
+      "validator_text": "Small subpleural areas of reticulation and ground glass in the right lower lobe may correspond to clinically insignificant interstitial changes."
+    },
+    {
+      "accession_number": "49590876",
+      "missed_finding": "Micronodules in lower lobes of both lungs",
+      "anatomical_location": "Lower lobes, both lungs",
+      "category": "nodule",
+      "clinical_significance": "low",
+      "validator_text": "A few micronodules in the lower lobes of both lungs."
+    },
+    {
+      "accession_number": "49590876",
+      "missed_finding": "Pulmonary artery dilation (3.1 cm) suggesting pulmonary hypertension",
+      "anatomical_location": "Main pulmonary artery",
+      "category": "vascular",
+      "clinical_significance": "medium",
+      "validator_text": "The main pulmonary artery is dilated (3.1 cm). Dilation of the pulmonary artery, which may indicate pulmonary hypertension."
+    },
+    {
+      "accession_number": "49590876",
+      "missed_finding": "Osteosclerotic lesion in T11 vertebral body",
+      "anatomical_location": "T11 vertebral body",
+      "category": "bone_lesion",
+      "clinical_significance": "medium",
+      "validator_text": "Osteosclerotic lesion of the vertebral body T11 up to 5 mm."
+    },
+    {
+      "accession_number": "49590876",
+      "missed_finding": "Small hiatal hernia",
+      "anatomical_location": "Gastroesophageal junction",
+      "category": "gastrointestinal",
+      "clinical_significance": "low",
+      "validator_text": "Small hiatal hernia."
+    },
+    {
+      "accession_number": "49613094",
+      "missed_finding": "Osteoblastic lesions in T5 and T9 vertebral bodies (1.1 cm and 1.0 cm)",
+      "anatomical_location": "T5 and T9 vertebral bodies",
+      "category": "bone_lesion",
+      "clinical_significance": "high",
+      "validator_text": "Osteoblastic lesions in the bodies of the T5 and T9 vertebrae 1.1 cm and 1.0 cm respectively."
+    },
+    {
+      "accession_number": "49613094",
+      "missed_finding": "Ovoid lesion in the left breast (1.1 x 1.0 cm)",
+      "anatomical_location": "Left breast",
+      "category": "breast",
+      "clinical_significance": "high",
+      "validator_text": "An ovoid lesion in the left breast 1.1 × 1.0 cm. Given the breast density, ultrasound is recommended."
+    },
+    {
+      "accession_number": "49613094",
+      "missed_finding": "Mild pericardial effusion",
+      "anatomical_location": "Pericardium",
+      "category": "cardiac",
+      "clinical_significance": "low",
+      "validator_text": "Mild pericardial effusion is probably due to an inflammatory process."
+    },
+    {
+      "accession_number": "49498646",
+      "missed_finding": "Left ventricular hypertrophy",
+      "anatomical_location": "Heart, left ventricle",
+      "category": "cardiac",
+      "clinical_significance": "medium",
+      "validator_text": "No cardiomegaly, left ventricular hypertrophy."
+    },
+    {
+      "accession_number": "49498646",
+      "missed_finding": "Osteosclerotic lesions in right humeral head and 3rd/8th ribs on the right (bone islands)",
+      "anatomical_location": "Right humeral head, right 3rd and 8th ribs",
+      "category": "bone_lesion",
+      "clinical_significance": "low",
+      "validator_text": "Osteosclerotic lesions of the right humeral head and the third and eighth ribs on the right (bone islands)."
+    },
+    {
+      "accession_number": "49504938",
+      "missed_finding": "Left adrenal lesion (1.2 cm, 16 HU), increased in size",
+      "anatomical_location": "Left adrenal gland",
+      "category": "soft_tissue",
+      "clinical_significance": "high",
+      "validator_text": "Left adrenal lesion, 1.2 cm, 16 HU, increased in size along the short axis by 0.3 cm. Further evaluation with adrenal protocol CT is recommended."
+    },
+    {
+      "accession_number": "49504938",
+      "missed_finding": "Paraseptal emphysema (in addition to centrilobular)",
+      "anatomical_location": "Lungs",
+      "category": "interstitial_lung",
+      "clinical_significance": "low",
+      "validator_text": "Moderate centrilobular emphysema, mild paraseptal emphysema."
+    },
+    {
+      "accession_number": "49508967",
+      "missed_finding": "Bronchial wall thickening of segmental and subsegmental bronchi",
+      "anatomical_location": "Segmental and subsegmental bronchi",
+      "category": "interstitial_lung",
+      "clinical_significance": "low",
+      "validator_text": "Thickening of the walls of segmental and subsegmental bronchi."
+    },
+    {
+      "accession_number": "49551302",
+      "missed_finding": "Small hiatal hernia",
+      "anatomical_location": "Gastroesophageal junction",
+      "category": "gastrointestinal",
+      "clinical_significance": "low",
+      "validator_text": "Small hiatal hernia."
+    },
+    {
+      "accession_number": "49551302",
+      "missed_finding": "Single cyst in the left upper lobe",
+      "anatomical_location": "Left upper lobe",
+      "category": "nodule",
+      "clinical_significance": "low",
+      "validator_text": "single cyst in the left upper lobe."
+    },
+    {
+      "accession_number": "49024208",
+      "missed_finding": "Lipomatous hypertrophy of the interatrial septum",
+      "anatomical_location": "Heart, interatrial septum",
+      "category": "soft_tissue",
+      "clinical_significance": "low",
+      "validator_text": "Lipomatous hypertrophy of the interatrial septum."
+    },
+    {
+      "accession_number": "49450795",
+      "missed_finding": "Small hiatal hernia",
+      "anatomical_location": "Gastroesophageal junction",
+      "category": "gastrointestinal",
+      "clinical_significance": "low",
+      "validator_text": "Small hiatal hernia."
+    },
+    {
+      "accession_number": "49477172",
+      "missed_finding": "Additional pulmonary nodules identified in multiple lobes requiring follow-up (up to 7 mm, multiple locations with image references)",
+      "anatomical_location": "Bilateral, multiple lobes",
+      "category": "nodule",
+      "clinical_significance": "medium",
+      "validator_text": "Multiple round and triangular solid nodules in both lungs: upper lobe on the right single nodule 5 mm; middle lobe on the right a few nodules up to 6 mm; lower lobe on the right a few nodules up to 7 mm; upper lobe on the left a few nodules up to 4 mm; lower lobe on the left several nodules up to 7 mm. Some solid nodules may require CT at 3–6 months."
+    },
+    {
+      "accession_number": "49477359",
+      "missed_finding": "Interstitial lung abnormality (fibrosis) in right lower lobe with negative interval change, including group of cysts, traction bronchiectasis, ground glass opacities",
+      "anatomical_location": "Right lower lobe",
+      "category": "soft_tissue",
+      "clinical_significance": "medium",
+      "validator_text": "Group of cysts, traction bronchiectasis, reticulations and ground glass opacities in the lower lobe of the right lung, negative progression due to an increase in ground-glass opacities."
+    },
+    {
+      "accession_number": "49477359",
+      "missed_finding": "Gastric dilatation",
+      "anatomical_location": "Stomach",
+      "category": "gastrointestinal",
+      "clinical_significance": "low",
+      "validator_text": "Gastric dilatation."
+    }
+  ]
+}

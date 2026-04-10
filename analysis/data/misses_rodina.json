@@ -1,0 +1,208 @@
+{
+  "doctor_name": "Родина Лия",
+  "doctor_id": 22,
+  "total_studies": 9,
+  "total_missed_pathologies": 20,
+  "misses": [
+    {
+      "accession_number": "49574842",
+      "missed_finding": "Mild enlargement of the left ventricle",
+      "anatomical_location": "Heart",
+      "category": "cardiac",
+      "clinical_significance": "medium",
+      "validator_text": "No cardiomegaly is identified, mild enlargement of the left ventricle."
+    },
+    {
+      "accession_number": "49598793",
+      "missed_finding": "Calcified right hilar lymph nodes (healed granulomatous process)",
+      "anatomical_location": "Mediastinum / hila",
+      "category": "lymphadenopathy",
+      "clinical_significance": "low",
+      "validator_text": "No mass or lymphadenopathy is identified. Calcified right hilar lymph nodes (healed granulomatous process)."
+    },
+    {
+      "accession_number": "49598793",
+      "missed_finding": "Minimal thickening of the walls of segmental bronchi",
+      "anatomical_location": "Airways",
+      "category": "airway",
+      "clinical_significance": "low",
+      "validator_text": "Minimal thickening of the walls of segmental bronchi."
+    },
+    {
+      "accession_number": "49598793",
+      "missed_finding": "Degenerative changes of shoulder joints",
+      "anatomical_location": "Shoulder joints",
+      "category": "bone/degenerative",
+      "clinical_significance": "low",
+      "validator_text": "Moderate degenerative changes of the spine and shoulder joints."
+    },
+    {
+      "accession_number": "49529870",
+      "missed_finding": "Reticulation and interstitial thickening in the lung bases (interstitial lung disease pattern)",
+      "anatomical_location": "Lung bases bilateral",
+      "category": "interstitial lung disease",
+      "clinical_significance": "medium",
+      "validator_text": "Reticulation and interstitial thickening in the lung bases, stable compared to December 20, 2023."
+    },
+    {
+      "accession_number": "49529870",
+      "missed_finding": "Irregular thickening and nodularity of the trachea and main bronchi walls (tracheobronchopathia)",
+      "anatomical_location": "Trachea and main bronchi",
+      "category": "airway",
+      "clinical_significance": "medium",
+      "validator_text": "Irregular thickening and nodularity of the trachea and main bronchi walls."
+    },
+    {
+      "accession_number": "49529870",
+      "missed_finding": "Small hiatal hernia",
+      "anatomical_location": "Mediastinum / GI",
+      "category": "soft tissue",
+      "clinical_significance": "low",
+      "validator_text": "No mass. No lymphadenopathy. Small hiatal hernia."
+    },
+    {
+      "accession_number": "49529870",
+      "missed_finding": "Mitral valve calcification",
+      "anatomical_location": "Heart — mitral valve",
+      "category": "cardiac",
+      "clinical_significance": "medium",
+      "validator_text": "Mitral valve calcification."
+    },
+    {
+      "accession_number": "49529870",
+      "missed_finding": "Left ventricular enlargement",
+      "anatomical_location": "Heart — left ventricle",
+      "category": "cardiac",
+      "clinical_significance": "medium",
+      "validator_text": "No cardiomegaly, left ventricular enlargement."
+    },
+    {
+      "accession_number": "49529870",
+      "missed_finding": "Decreased vertebral body density (osteopenia) with HU measurements",
+      "anatomical_location": "Thoracic/lumbar spine",
+      "category": "bone/metabolic",
+      "clinical_significance": "medium",
+      "validator_text": "Decrease in vertebral body density: T11 - 130 HU, T12 - 114 HU, L1 - 120 HU, L2 - 102 HU."
+    },
+    {
+      "accession_number": "49529870",
+      "missed_finding": "Sternal sutures (evidence of prior sternotomy)",
+      "anatomical_location": "Chest wall — sternum",
+      "category": "postoperative",
+      "clinical_significance": "low",
+      "validator_text": "Moderate degenerative changes of the thoracic spine. Sternal sutures."
+    },
+    {
+      "accession_number": "49319424",
+      "missed_finding": "Additional solid nodule in the right upper lobe (doctor reported one, validator found two)",
+      "anatomical_location": "Right upper lobe",
+      "category": "nodule",
+      "clinical_significance": "medium",
+      "validator_text": "Two solid nodules in the right upper lobe, up to 3 mm (image 37, series 4), unchanged."
+    },
+    {
+      "accession_number": "49319424",
+      "missed_finding": "Few micronodules of the right lung",
+      "anatomical_location": "Right lung",
+      "category": "nodule",
+      "clinical_significance": "low",
+      "validator_text": "Few micronodules of the right lung, unchanged."
+    },
+    {
+      "accession_number": "49319424",
+      "missed_finding": "Mitral valve calcification",
+      "anatomical_location": "Heart — mitral valve",
+      "category": "cardiac",
+      "clinical_significance": "medium",
+      "validator_text": "Calcification of the aortic and mitral valve."
+    },
+    {
+      "accession_number": "49407870",
+      "missed_finding": "Thyroid nodule 8 mm in the right lobe",
+      "anatomical_location": "Thyroid gland — right lobe",
+      "category": "thyroid",
+      "clinical_significance": "high",
+      "validator_text": "An 8 mm hypodense nodule is seen in the right lobe of thyroid gland."
+    },
+    {
+      "accession_number": "49407870",
+      "missed_finding": "Bone island of the right humerus",
+      "anatomical_location": "Right humerus",
+      "category": "bone/benign",
+      "clinical_significance": "low",
+      "validator_text": "Moderate degenerative changes of the spine and shoulder joints. Bone island of the right humerus."
+    },
+    {
+      "accession_number": "49407870",
+      "missed_finding": "Degenerative changes of shoulder joints",
+      "anatomical_location": "Shoulder joints",
+      "category": "bone/degenerative",
+      "clinical_significance": "low",
+      "validator_text": "Moderate degenerative changes of the spine and shoulder joints."
+    },
+    {
+      "accession_number": "49441288",
+      "missed_finding": "Coronary artery bypass grafting (CABG) — surgical history not reported",
+      "anatomical_location": "Heart / coronary arteries",
+      "category": "postoperative",
+      "clinical_significance": "high",
+      "validator_text": "Сoronary artery bypass grafting."
+    },
+    {
+      "accession_number": "49441288",
+      "missed_finding": "Right pulmonary artery dilation up to 2.9 cm",
+      "anatomical_location": "Right pulmonary artery",
+      "category": "vascular",
+      "clinical_significance": "medium",
+      "validator_text": "The pulmonary trunk is not dilated, the right pulmonary artery is dilated up to 2.9 cm."
+    },
+    {
+      "accession_number": "49462166",
+      "missed_finding": "Left ventricular enlargement",
+      "anatomical_location": "Heart — left ventricle",
+      "category": "cardiac",
+      "clinical_significance": "medium",
+      "validator_text": "No cardiomegaly, left ventricular enlargement."
+    },
+    {
+      "accession_number": "49462166",
+      "missed_finding": "Mitral valve calcification",
+      "anatomical_location": "Heart — mitral valve",
+      "category": "cardiac",
+      "clinical_significance": "medium",
+      "validator_text": "Aortic and mitral valve calcification."
+    }
+  ],
+  "summary": {
+    "by_category": {
+      "cardiac": 7,
+      "nodule": 2,
+      "airway": 2,
+      "bone/degenerative": 2,
+      "postoperative": 2,
+      "vascular": 1,
+      "interstitial lung disease": 1,
+      "soft tissue": 1,
+      "lymphadenopathy": 1,
+      "bone/metabolic": 1,
+      "bone/benign": 1,
+      "thyroid": 1
+    },
+    "by_significance": {
+      "high": 2,
+      "medium": 10,
+      "low": 8
+    },
+    "by_study": {
+      "49574842": 1,
+      "49583110": 0,
+      "49598793": 3,
+      "49489162": 0,
+      "49529870": 6,
+      "49319424": 3,
+      "49407870": 3,
+      "49441288": 2,
+      "49462166": 2
+    }
+  }
+}

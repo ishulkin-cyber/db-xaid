@@ -1,0 +1,219 @@
+{
+  "doctor_name": "Павлович Айсель",
+  "doctor_id": 5,
+  "total_studies": 12,
+  "studies_with_misses": 10,
+  "studies_without_misses": 2,
+  "total_missed_pathologies": 24,
+  "average_misses_per_study": 2.0,
+  "significance_breakdown": {
+    "medium": 10,
+    "low": 13,
+    "high": 1
+  },
+  "category_breakdown": {
+    "vascular": 4,
+    "airway_disease": 6,
+    "bone_lesion": 2,
+    "nodule": 1,
+    "soft_tissue": 4,
+    "pleural": 1,
+    "interstitial": 2,
+    "cardiac": 2,
+    "abdominal": 2
+  },
+  "misses": [
+    {
+      "accession_number": "49590536",
+      "missed_finding": "Aberrant right subclavian artery with possible esophageal compression",
+      "anatomical_location": "Great vessels",
+      "category": "vascular",
+      "clinical_significance": "medium",
+      "validator_text": "Aberrant right subclavian arteria may be the cause of symptoms of esophageal compression."
+    },
+    {
+      "accession_number": "49590786",
+      "missed_finding": "Bronchial secretion in segmental and subsegmental bronchi of both lungs",
+      "anatomical_location": "Airways, both lungs",
+      "category": "airway_disease",
+      "clinical_significance": "low",
+      "validator_text": "Segmental and subsegmental bronchi of both lungs with secretion."
+    },
+    {
+      "accession_number": "49617252",
+      "missed_finding": "Peribronchial ground-glass opacities and bronchial wall thickening with secretion in left lower lobe",
+      "anatomical_location": "Left lower lobe, subsegmental bronchi",
+      "category": "airway_disease",
+      "clinical_significance": "medium",
+      "validator_text": "Subsegmental bronchi of the left lower lobe are with thickened walls and secretion, peribronchial (centrilobular) areas of ground glass are present."
+    },
+    {
+      "accession_number": "49617252",
+      "missed_finding": "Ossification of the anterior longitudinal ligament",
+      "anatomical_location": "Thoracic spine",
+      "category": "bone_lesion",
+      "clinical_significance": "low",
+      "validator_text": "Moderate degenerative changes of the thoracic spine, ossification of the anterior longitudinal ligament."
+    },
+    {
+      "accession_number": "49625124",
+      "missed_finding": "Multiple small pulmonary nodules in both lungs (4 nodules up to 4mm); doctor stated no nodules requiring follow-up",
+      "anatomical_location": "Right middle lobe, right lower lobe, left upper lobe",
+      "category": "nodule",
+      "clinical_significance": "medium",
+      "validator_text": "Few solid nodules in both lungs: - in the right middle lobe 4 mm (image 113, series 4); - in the right lower lobe 2 mm (image 131, series 4); - in the right lower lobe 3 mm (image 147, series 4); - in the left upper lobe 2 mm (image 59, series 4)."
+    },
+    {
+      "accession_number": "49625124",
+      "missed_finding": "Two osteoblastic lesions up to 2mm in T7 vertebral body (in a patient with T10 osteoblastic lesion already noted)",
+      "anatomical_location": "T7 vertebral body",
+      "category": "bone_lesion",
+      "clinical_significance": "high",
+      "validator_text": "In the T7 vertebral body there are two osteoblastic lesions up to 2 mm."
+    },
+    {
+      "accession_number": "49625124",
+      "missed_finding": "Second thyroid nodule in lower pole of left lobe up to 4mm",
+      "anatomical_location": "Thyroid, left lobe lower pole",
+      "category": "soft_tissue",
+      "clinical_significance": "low",
+      "validator_text": "hypodense lesion in the lower pole of the left lobe up to 4 mm."
+    },
+    {
+      "accession_number": "49625124",
+      "missed_finding": "Minimal interlobar pleural thickening on the right, possibly small fluid",
+      "anatomical_location": "Right interlobar pleura",
+      "category": "pleural",
+      "clinical_significance": "low",
+      "validator_text": "On the right, the interlobar pleura is minimally thickened, possibly due to tiny amount of fluid."
+    },
+    {
+      "accession_number": "49518153",
+      "missed_finding": "Ground-glass opacities and bronchiolectasis in subpleural regions (interstitial lung abnormalities)",
+      "anatomical_location": "Subpleural lungs, right middle lobe and left lower lobe",
+      "category": "interstitial",
+      "clinical_significance": "medium",
+      "validator_text": "ground glass opacities and a few bronchioloectasis are present, without interval change."
+    },
+    {
+      "accession_number": "49518153",
+      "missed_finding": "Degenerative changes of the shoulder joints",
+      "anatomical_location": "Shoulder joints",
+      "category": "soft_tissue",
+      "clinical_significance": "low",
+      "validator_text": "degenerative changes of the shoulder joints."
+    },
+    {
+      "accession_number": "49544517",
+      "missed_finding": "Mild coronary artery calcification",
+      "anatomical_location": "Coronary arteries",
+      "category": "cardiac",
+      "clinical_significance": "medium",
+      "validator_text": "Subjectively, there is mild coronary artery calcification."
+    },
+    {
+      "accession_number": "49563648",
+      "missed_finding": "Extrapleural lipomatosis",
+      "anatomical_location": "Left upper lobe pleura",
+      "category": "soft_tissue",
+      "clinical_significance": "low",
+      "validator_text": "Moderate pleural thickening persists in the left upper lobe, with no change compared with the prior study, extrapleural lipomatosis."
+    },
+    {
+      "accession_number": "49563648",
+      "missed_finding": "Bilateral mild atelectatic changes in lingular segment and middle lobe",
+      "anatomical_location": "Lingular segment and right middle lobe",
+      "category": "airway_disease",
+      "clinical_significance": "low",
+      "validator_text": "The lungs are showing bilateral mild atelectatic changes in the lingual segment and middle lobe."
+    },
+    {
+      "accession_number": "49563648",
+      "missed_finding": "Air trapping in the left lower lobe",
+      "anatomical_location": "Left lower lobe",
+      "category": "airway_disease",
+      "clinical_significance": "low",
+      "validator_text": "Air trap in the left lower lobe, unchanged."
+    },
+    {
+      "accession_number": "49563648",
+      "missed_finding": "Renal cyst up to 3 cm in upper pole of right kidney",
+      "anatomical_location": "Right kidney, upper pole",
+      "category": "abdominal",
+      "clinical_significance": "medium",
+      "validator_text": "There is a cyst up to 3 cm in the upper pole of the right kidney."
+    },
+    {
+      "accession_number": "49564884",
+      "missed_finding": "Left ventricular enlargement",
+      "anatomical_location": "Heart, left ventricle",
+      "category": "cardiac",
+      "clinical_significance": "medium",
+      "validator_text": "No cardiomegaly, left ventricular enlargement."
+    },
+    {
+      "accession_number": "49564884",
+      "missed_finding": "Small airways disease: centrilobular ground-glass areas, mosaic pneumatization, air traps in both lower lobes",
+      "anatomical_location": "Lower lobes, both lungs",
+      "category": "airway_disease",
+      "clinical_significance": "medium",
+      "validator_text": "In the lower lobes of both lungs there are multiple centrilobular areas of ground glass, mosaic pneumatization with air traps, the contents in the lumens of the subsegmental bronchi (small airways disease)."
+    },
+    {
+      "accession_number": "49564884",
+      "missed_finding": "Subpleural reticulation and ground glass in left lung (interstitial changes)",
+      "anatomical_location": "Left lung, subpleural",
+      "category": "interstitial",
+      "clinical_significance": "medium",
+      "validator_text": "In the left lung subpleural reticulation and ground glass, consistent with interstitial changes."
+    },
+    {
+      "accession_number": "49564884",
+      "missed_finding": "Mitral valve calcification (doctor only reported aortic valve calcification)",
+      "anatomical_location": "Mitral valve",
+      "category": "vascular",
+      "clinical_significance": "low",
+      "validator_text": "Aortic and mitral valve calcification."
+    },
+    {
+      "accession_number": "49564884",
+      "missed_finding": "Mild gynecomastia",
+      "anatomical_location": "Chest wall",
+      "category": "soft_tissue",
+      "clinical_significance": "low",
+      "validator_text": "Mild gynecomastia."
+    },
+    {
+      "accession_number": "49565580",
+      "missed_finding": "Small hiatal hernia",
+      "anatomical_location": "Esophageal hiatus",
+      "category": "abdominal",
+      "clinical_significance": "low",
+      "validator_text": "Small hiatal hernia."
+    },
+    {
+      "accession_number": "49565580",
+      "missed_finding": "Single calcification of right coronary artery",
+      "anatomical_location": "Right coronary artery",
+      "category": "vascular",
+      "clinical_significance": "low",
+      "validator_text": "Single calcification of the right coronary artery."
+    },
+    {
+      "accession_number": "49565580",
+      "missed_finding": "Moderate aortic wall calcifications (doctor omitted aortic calcification entirely)",
+      "anatomical_location": "Thoracic aorta",
+      "category": "vascular",
+      "clinical_significance": "low",
+      "validator_text": "Thoracic aorta is not enlarged with moderate aortic calcifications."
+    },
+    {
+      "accession_number": "49412073",
+      "missed_finding": "Bilateral air traps in lower lobes (bronchoobstruction) and bronchial secretion",
+      "anatomical_location": "Lower lobes, both lungs",
+      "category": "airway_disease",
+      "clinical_significance": "medium",
+      "validator_text": "Air traps in the lower lobes on both sides (signs of bronchoobstruction), secretion of the segmental and subsegmental bronchi of the lower lobes."
+    }
+  ]
+}
