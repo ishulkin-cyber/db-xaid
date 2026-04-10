@@ -13,7 +13,7 @@ import type {
 } from "./types";
 import { pct } from "./utils";
 
-const dataDir = path.join(process.cwd(), "data");
+const dataDir = path.join(process.cwd(), "public", "data");
 
 function readJSON<T>(filename: string): T {
   const filePath = path.join(dataDir, filename);
