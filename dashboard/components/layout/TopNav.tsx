@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -14,9 +14,19 @@ const links = [
 
 export function TopNav() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   function isActive(href: string) {
     return pathname.startsWith(href);
+  }
+
+  function resolveHref(href: string) {
+    // When on a study detail page, restore filters from ?back= param
+    if (href === "/studies" && pathname.startsWith("/studies/")) {
+      const back = searchParams.get("back");
+      if (back) return `/studies?${decodeURIComponent(back)}`;
+    }
+    return href;
   }
 
   return (
@@ -30,7 +40,7 @@ export function TopNav() {
           {links.map((link) => (
             <Link
               key={link.href}
-              href={link.href}
+              href={resolveHref(link.href)}
               className={cn(
                 "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                 isActive(link.href)
