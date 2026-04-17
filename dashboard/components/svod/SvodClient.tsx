@@ -6,7 +6,7 @@ import {
   Tooltip, Legend, ResponsiveContainer, ReferenceLine,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+
 import Link from "next/link";
 import type { GradeTrendPoint, RootCauseData } from "@/lib/data";
 import { PeriodSelector } from "@/components/PeriodSelector";
@@ -52,8 +52,8 @@ const ROWS: RowDef[] = [
   },
   {
     key: "g3PlusPct",
-    label: "Значимые расхождения (G3+)",
-    desc: "Пропуски и гипердиагностика, влияющие на тактику",
+    label: "Значимые расхождения (G3)",
+    desc: "Пропуски, влияющие на тактику (underreport)",
     higherIsBetter: false,
     color: "text-red-600",
     lineColor: "#ef4444",
@@ -537,7 +537,7 @@ export function SvodClient({
                           {row.key === "clinConcordance" ? "Конкорд." :
                            row.key === "g2bNonMipsPct" ? "G2b" :
                            row.key === "g2bMipsPct" ? "2b-MIPS" :
-                           row.key === "g3PlusPct" ? "G3+" : "G4"}
+                           row.key === "g3PlusPct" ? "G3" : "G4"}
                         </span>
                       </th>
                     ))}

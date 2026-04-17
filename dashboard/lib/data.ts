@@ -503,7 +503,7 @@ export async function getGradeTrendData(mode: "week" | "month" | "year" = "month
         g2bPct: pct(g2b, total),
         g2bNonMipsPct: pct(nonMips2b, total),
         g2bMipsPct: pct(mips2b, total),
-        g3PlusPct: pct(g3 + g4, total),
+        g3PlusPct: pct(g3, total),
         g4Pct: pct(g4, total),
         totalFindings: total,
       };
