@@ -49,8 +49,8 @@ async function ensureRepo(): Promise<void> {
 
   const repoExists = fs.existsSync(path.join(LOCAL_DIR, ".git"));
 
-  // Data is fresh: repo exists and was cloned recently (or by prebuild script)
-  if (repoExists && (lastClone > 0 ? Date.now() - lastClone < CACHE_TTL_MS : true)) {
+  // Data is fresh: repo was cloned by this process instance within TTL
+  if (repoExists && lastClone > 0 && Date.now() - lastClone < CACHE_TTL_MS) {
     return;
   }
 
