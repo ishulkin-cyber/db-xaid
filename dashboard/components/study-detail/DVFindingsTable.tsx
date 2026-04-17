@@ -68,7 +68,7 @@ export function DVFindingsTable({ findings }: { findings: DVFinding[] }) {
                 {f.validator_description || "\u2014"}
               </TableCell>
               <TableCell>
-                <GradeBadge grade={f.grade} />
+                <GradeBadge grade={f.grade} mipsRelated={f.mips_related} />
               </TableCell>
               <TableCell className="whitespace-normal max-w-[250px] text-xs">
                 {f.notes || "\u2014"}
