@@ -315,17 +315,17 @@ export function SvodClient({
         </CardHeader>
         <CardContent className="space-y-6">
 
-          {/* Row 1: G3+ categories + MIPS measures */}
+          {/* Row 1: G3 categories + G4 categories */}
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
 
-            {/* G3+ top categories */}
+            {/* G3 top categories */}
             <div>
               <p className="text-sm font-semibold mb-2 flex items-center gap-2">
                 <span className="inline-block h-2 w-2 rounded-full bg-red-500" />
-                Топ категорий значимых пропусков (G3+)
+                Топ категорий значимых пропусков (G3)
               </p>
               {rootCause.g3TopCategories.length === 0 ? (
-                <p className="text-sm text-emerald-600">Нет G3+ за период ✓</p>
+                <p className="text-sm text-emerald-600">Нет G3 за период ✓</p>
               ) : (
                 <div className="space-y-1.5">
                   {rootCause.g3TopCategories.map(({ category, count, pct }) => (
@@ -345,7 +345,36 @@ export function SvodClient({
               )}
             </div>
 
-            {/* MIPS top measures */}
+            {/* G4 top categories */}
+            <div>
+              <p className="text-sm font-semibold mb-2 flex items-center gap-2">
+                <span className="inline-block h-2 w-2 rounded-full bg-orange-500" />
+                Топ категорий гипердиагностики (G4)
+              </p>
+              {rootCause.g4TopCategories.length === 0 ? (
+                <p className="text-sm text-emerald-600">Нет G4 за период ✓</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {rootCause.g4TopCategories.map(({ category, count, pct }) => (
+                    <div key={category} className="flex items-center gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between text-xs mb-0.5">
+                          <span className="truncate text-foreground">{category}</span>
+                          <span className="ml-2 text-muted-foreground shrink-0">{count} ({pct}%)</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-orange-100 overflow-hidden">
+                          <div className="h-full rounded-full bg-orange-400" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Row 1b: MIPS measures */}
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 pt-2 border-t">
             <div>
               <p className="text-sm font-semibold mb-2 flex items-center gap-2">
                 <span className="inline-block h-2 w-2 rounded-full bg-amber-700" />

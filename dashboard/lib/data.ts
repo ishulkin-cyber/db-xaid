@@ -594,6 +594,7 @@ export async function getMIPSByDoctor(): Promise<DoctorMIPSStat[]> {
 
 export interface RootCauseData {
   g3TopCategories: { category: string; count: number; pct: number }[];
+  g4TopCategories: { category: string; count: number; pct: number }[];
   mipsTopMeasures: { measure: string; label: string; count: number }[];
   g3Concentration: {
     topDoctorId: number;
@@ -617,7 +618,9 @@ export async function getRootCauseData(
   const classified = await getMIPSClassifiedFindings();
   const periodAccessions = new Set(periodFindings.map((f) => f.accession_number));
 
-  const g3findings = periodFindings.filter((f) => f.grade === "3" || f.grade === "4");
+  const g3findings = periodFindings.filter((f) => f.grade === "3");
+  const g4findings = periodFindings.filter((f) => f.grade === "4");
+
   const g3ByCat: Record<string, number> = {};
   for (const f of g3findings) {
     g3ByCat[f.finding_category] = (g3ByCat[f.finding_category] ?? 0) + 1;
@@ -626,6 +629,15 @@ export async function getRootCauseData(
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6)
     .map(([category, count]) => ({ category, count, pct: pct(count, g3findings.length) }));
+
+  const g4ByCat: Record<string, number> = {};
+  for (const f of g4findings) {
+    g4ByCat[f.finding_category] = (g4ByCat[f.finding_category] ?? 0) + 1;
+  }
+  const g4TopCategories = Object.entries(g4ByCat)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([category, count]) => ({ category, count, pct: pct(count, g4findings.length) }));
 
   const mipsByMeasure: Record<string, number> = {};
   for (const cf of classified) {
@@ -678,6 +690,7 @@ export async function getRootCauseData(
 
   return {
     g3TopCategories,
+    g4TopCategories,
     mipsTopMeasures,
     g3Concentration,
     mixEffect: {
