@@ -1,7 +1,12 @@
 import { getDVStudySummaries, getDoctorStatsList } from "@/lib/data";
+import nextDynamic from "next/dynamic";
 
 export const dynamic = "force-dynamic";
-import { DVStudyTable } from "@/components/studies/DVStudyTable";
+
+const DVStudyTable = nextDynamic(
+  () => import("@/components/studies/DVStudyTable").then((m) => m.DVStudyTable),
+  { ssr: false }
+);
 
 export default async function StudiesPage() {
   const [summaries, doctors] = await Promise.all([

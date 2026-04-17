@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
   Table,
@@ -16,29 +16,35 @@ import type { DVStudySummary, DoctorStats } from "@/lib/types";
 const SESSION_KEY_DOCTOR = "studies_filter_doctor";
 const SESSION_KEY_GRADE = "studies_filter_grade";
 
+function readSession(key: string): string {
+  try {
+    return sessionStorage.getItem(key) ?? "all";
+  } catch {
+    return "all";
+  }
+}
+
 interface DVStudyTableProps {
   summaries: DVStudySummary[];
   doctors: DoctorStats[];
 }
 
 export function DVStudyTable({ summaries, doctors }: DVStudyTableProps) {
-  const [doctorFilter, setDoctorFilter] = useState<string>("all");
-  const [gradeFilter, setGradeFilter] = useState<string>("all");
-
-  // Restore filters from sessionStorage on mount
-  useEffect(() => {
-    setDoctorFilter(sessionStorage.getItem(SESSION_KEY_DOCTOR) ?? "all");
-    setGradeFilter(sessionStorage.getItem(SESSION_KEY_GRADE) ?? "all");
-  }, []);
+  const [doctorFilter, setDoctorFilter] = useState<string>(
+    () => readSession(SESSION_KEY_DOCTOR)
+  );
+  const [gradeFilter, setGradeFilter] = useState<string>(
+    () => readSession(SESSION_KEY_GRADE)
+  );
 
   function handleDoctorChange(value: string) {
     setDoctorFilter(value);
-    sessionStorage.setItem(SESSION_KEY_DOCTOR, value);
+    try { sessionStorage.setItem(SESSION_KEY_DOCTOR, value); } catch {}
   }
 
   function handleGradeChange(value: string) {
     setGradeFilter(value);
-    sessionStorage.setItem(SESSION_KEY_GRADE, value);
+    try { sessionStorage.setItem(SESSION_KEY_GRADE, value); } catch {}
   }
 
   const filtered = useMemo(() => {
