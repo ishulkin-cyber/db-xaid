@@ -10,11 +10,14 @@ export const dynamic = "force-dynamic";
 
 interface StudyDetailPageProps {
   params: Promise<{ accession: string }>;
+  searchParams: Promise<{ back?: string }>;
 }
 
-export default async function StudyDetailPage({ params }: StudyDetailPageProps) {
+export default async function StudyDetailPage({ params, searchParams }: StudyDetailPageProps) {
   const { accession } = await params;
+  const { back } = await searchParams;
   const { findings, pair, summary } = await getStudyDetail(accession);
+  const backHref = back ? `/studies?${decodeURIComponent(back)}` : "/studies";
 
   if (!summary) {
     return (
@@ -45,7 +48,7 @@ export default async function StudyDetailPage({ params }: StudyDetailPageProps) 
   return (
     <div className="space-y-6">
       <Link
-        href="/studies"
+        href={backHref}
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         &larr; Все исследования

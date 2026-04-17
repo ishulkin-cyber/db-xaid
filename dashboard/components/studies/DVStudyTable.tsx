@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   Table,
@@ -19,8 +20,21 @@ interface DVStudyTableProps {
 }
 
 export function DVStudyTable({ summaries, doctors }: DVStudyTableProps) {
-  const [doctorFilter, setDoctorFilter] = useState<string>("all");
-  const [gradeFilter, setGradeFilter] = useState<string>("all");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const doctorFilter = searchParams.get("doctor") ?? "all";
+  const gradeFilter = searchParams.get("grade") ?? "all";
+
+  function setFilter(key: "doctor" | "grade", value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value === "all") {
+      params.delete(key);
+    } else {
+      params.set(key, value);
+    }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }
 
   const filtered = useMemo(() => {
     let result = summaries;
@@ -43,7 +57,7 @@ export function DVStudyTable({ summaries, doctors }: DVStudyTableProps) {
       <div className="flex flex-wrap items-center gap-3">
         <select
           value={doctorFilter}
-          onChange={(e) => setDoctorFilter(e.target.value)}
+          onChange={(e) => setFilter("doctor", e.target.value)}
           className="h-8 rounded-md border border-input bg-background px-2 text-sm"
           aria-label="Filter by doctor"
         >
@@ -57,7 +71,7 @@ export function DVStudyTable({ summaries, doctors }: DVStudyTableProps) {
 
         <select
           value={gradeFilter}
-          onChange={(e) => setGradeFilter(e.target.value)}
+          onChange={(e) => setFilter("grade", e.target.value)}
           className="h-8 rounded-md border border-input bg-background px-2 text-sm"
           aria-label="Filter by grade"
         >
@@ -99,7 +113,7 @@ export function DVStudyTable({ summaries, doctors }: DVStudyTableProps) {
               <TableRow key={s.accession_number}>
                 <TableCell>
                   <Link
-                    href={`/studies/${s.accession_number}`}
+                    href={`/studies/${s.accession_number}?back=${encodeURIComponent(searchParams.toString())}`}
                     className="font-mono text-sm text-blue-600 hover:underline"
                   >
                     {s.accession_number}
