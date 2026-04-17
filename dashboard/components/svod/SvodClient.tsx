@@ -14,7 +14,7 @@ import type { PeriodMode } from "@/lib/period";
 
 const STORAGE_KEY = "svod-grade-targets-v2";
 
-type GradeKey = "clinConcordance" | "g2bNonMipsPct" | "g2bMipsPct" | "g3PlusPct";
+type GradeKey = "clinConcordance" | "g2bNonMipsPct" | "g2bMipsPct" | "g3PlusPct" | "g4Pct";
 
 interface RowDef {
   key: GradeKey;
@@ -57,6 +57,14 @@ const ROWS: RowDef[] = [
     higherIsBetter: false,
     color: "text-red-600",
     lineColor: "#ef4444",
+  },
+  {
+    key: "g4Pct",
+    label: "Grade 4 — гипердиагностика",
+    desc: "Значимые находки в отчёте врача, отсутствующие у валидатора",
+    higherIsBetter: false,
+    color: "text-orange-600",
+    lineColor: "#ea580c",
   },
 ];
 
@@ -112,6 +120,7 @@ export function SvodClient({
     g2bNonMipsPct: true,
     g2bMipsPct: true,
     g3PlusPct: true,
+    g4Pct: true,
   });
 
   useEffect(() => {
@@ -134,6 +143,7 @@ export function SvodClient({
     g2bNonMipsPct:  point?.g2bNonMipsPct ?? 0,
     g2bMipsPct:     point?.g2bMipsPct ?? 0,
     g3PlusPct:      point?.g3PlusPct ?? 0,
+    g4Pct:          point?.g4Pct ?? 0,
   };
 
   const prevValues: Record<GradeKey, number> | null = prevPoint ? {
@@ -141,6 +151,7 @@ export function SvodClient({
     g2bNonMipsPct:  prevPoint.g2bNonMipsPct,
     g2bMipsPct:     prevPoint.g2bMipsPct,
     g3PlusPct:      prevPoint.g3PlusPct,
+    g4Pct:          prevPoint.g4Pct,
   } : null;
 
   // Reference lines for set targets
@@ -525,7 +536,8 @@ export function SvodClient({
                           />
                           {row.key === "clinConcordance" ? "Конкорд." :
                            row.key === "g2bNonMipsPct" ? "G2b" :
-                           row.key === "g2bMipsPct" ? "2b-MIPS" : "G3+"}
+                           row.key === "g2bMipsPct" ? "2b-MIPS" :
+                           row.key === "g3PlusPct" ? "G3+" : "G4"}
                         </span>
                       </th>
                     ))}
