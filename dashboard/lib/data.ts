@@ -58,15 +58,17 @@ function classifyRecord(r: DVFinding): [boolean, string | null] {
 
 // --- Raw data loaders (cached per request via React cache()) ---
 
-// Reads findings from GitLab and joins exam_date from excel_reports.json
+// Reads findings from GitLab and normalises field names.
+// dv_combined_analysis.json uses mips_driven/mips_measure — mapped to mips_related/mips_measure.
 export const getDVFindings = cache(async (): Promise<DVFinding[]> => {
   const [raw, excel] = await Promise.all([
-    readRepoJSON<Omit<DVFinding, "exam_date">[]>("dv_combined_analysis.json"),
+    readRepoJSON<(Omit<DVFinding, "exam_date"> & { mips_driven?: boolean })[]>("dv_combined_analysis.json"),
     readRepoJSON<Record<string, { sheet_date?: string }>>("excel_reports.json"),
   ]);
   return raw.map((f) => ({
     ...f,
     exam_date: excel[f.accession_number]?.sheet_date ?? null,
+    mips_related: f.mips_related ?? f.mips_driven ?? false,
   } as DVFinding));
 });
 
@@ -75,9 +77,12 @@ export const getDoctorValidatorPairs = cache(
     readRepoJSON<DoctorValidatorPair[]>("doctor_validator_pairs.json")
 );
 
-// Reads pre-classified 2b findings (with mips_related + mips_measure) from GitLab data repo
+// Derives MIPS-classified 2b findings from getDVFindings (mips_related already in source data)
 export const getMIPSClassifiedFindings = cache(async (): Promise<ClassifiedFinding[]> => {
-  return readRepoJSON<ClassifiedFinding[]>("dv_findings_2b_classified.json");
+  const findings = await getDVFindings();
+  return findings
+    .filter((f) => f.grade === "2b")
+    .map((f) => ({ ...f, mips_related: f.mips_related ?? false, mips_measure: f.mips_measure ?? null }));
 });
 
 // --- Period filtering (sync, pure) ---
@@ -359,28 +364,13 @@ export async function getDVStudySummaries(): Promise<DVStudySummary[]> {
 // --- Study detail ---
 
 export async function getStudyDetail(accession: string) {
-  const [findings, pairs, summaries, classified] = await Promise.all([
+  const [findings, pairs, summaries] = await Promise.all([
     getDVFindings(),
     getDoctorValidatorPairs(),
     getDVStudySummaries(),
-    getMIPSClassifiedFindings(),
   ]);
-  // Build lookup: accession+category → mips fields (from pre-classified GitLab data)
-  const mipsMap = new Map<string, { mips_related: boolean; mips_measure: string | null }>();
-  for (const cf of classified) {
-    if (cf.accession_number !== accession) continue;
-    const key = cf.finding_category.toLowerCase();
-    if (!mipsMap.has(key)) mipsMap.set(key, { mips_related: cf.mips_related, mips_measure: cf.mips_measure });
-  }
-  const accFindings = findings
-    .filter((f) => f.accession_number === accession)
-    .map((f) => {
-      if (f.grade !== "2b") return f;
-      const mips = mipsMap.get(f.finding_category.toLowerCase());
-      return mips ? { ...f, ...mips } : f;
-    });
   return {
-    findings: accFindings,
+    findings: findings.filter((f) => f.accession_number === accession),
     pair: pairs.find((p) => p.accession_number === accession),
     summary: summaries.find((s) => s.accession_number === accession),
   };
