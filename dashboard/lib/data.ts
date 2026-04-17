@@ -58,17 +58,15 @@ function classifyRecord(r: DVFinding): [boolean, string | null] {
 
 // --- Raw data loaders (cached per request via React cache()) ---
 
-// Reads findings from GitLab and normalises field names.
-// dv_combined_analysis.json uses mips_driven/mips_measure — mapped to mips_related/mips_measure.
+// Reads findings from GitLab and joins exam_date from excel_reports.json
 export const getDVFindings = cache(async (): Promise<DVFinding[]> => {
   const [raw, excel] = await Promise.all([
-    readRepoJSON<(Omit<DVFinding, "exam_date"> & { mips_driven?: boolean })[]>("dv_combined_analysis.json"),
+    readRepoJSON<Omit<DVFinding, "exam_date">[]>("dv_combined_analysis.json"),
     readRepoJSON<Record<string, { sheet_date?: string }>>("excel_reports.json"),
   ]);
   return raw.map((f) => ({
     ...f,
     exam_date: excel[f.accession_number]?.sheet_date ?? null,
-    mips_related: f.mips_related ?? f.mips_driven ?? false,
   } as DVFinding));
 });
 
@@ -77,12 +75,15 @@ export const getDoctorValidatorPairs = cache(
     readRepoJSON<DoctorValidatorPair[]>("doctor_validator_pairs.json")
 );
 
-// Derives MIPS-classified 2b findings from getDVFindings (mips_related already in source data)
+// Classifies 2b findings using the TypeScript-ported MIPS rules (dv_combined_analysis.json has no mips fields)
 export const getMIPSClassifiedFindings = cache(async (): Promise<ClassifiedFinding[]> => {
   const findings = await getDVFindings();
   return findings
     .filter((f) => f.grade === "2b")
-    .map((f) => ({ ...f, mips_related: f.mips_related ?? false, mips_measure: f.mips_measure ?? null }));
+    .map((f) => {
+      const [mips_related, mips_measure] = classifyRecord(f);
+      return { ...f, mips_related, mips_measure };
+    });
 });
 
 // --- Period filtering (sync, pure) ---
@@ -369,8 +370,15 @@ export async function getStudyDetail(accession: string) {
     getDoctorValidatorPairs(),
     getDVStudySummaries(),
   ]);
+  const accFindings = findings
+    .filter((f) => f.accession_number === accession)
+    .map((f) => {
+      if (f.grade !== "2b") return f;
+      const [mips_related, mips_measure] = classifyRecord(f);
+      return { ...f, mips_related, mips_measure };
+    });
   return {
-    findings: findings.filter((f) => f.accession_number === accession),
+    findings: accFindings,
     pair: pairs.find((p) => p.accession_number === accession),
     summary: summaries.find((s) => s.accession_number === accession),
   };
