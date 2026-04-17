@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   Table,
@@ -14,26 +13,32 @@ import {
 import { GradeBadge } from "@/components/studies/GradeBadge";
 import type { DVStudySummary, DoctorStats } from "@/lib/types";
 
+const SESSION_KEY_DOCTOR = "studies_filter_doctor";
+const SESSION_KEY_GRADE = "studies_filter_grade";
+
 interface DVStudyTableProps {
   summaries: DVStudySummary[];
   doctors: DoctorStats[];
 }
 
 export function DVStudyTable({ summaries, doctors }: DVStudyTableProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const doctorFilter = searchParams.get("doctor") ?? "all";
-  const gradeFilter = searchParams.get("grade") ?? "all";
+  const [doctorFilter, setDoctorFilter] = useState<string>("all");
+  const [gradeFilter, setGradeFilter] = useState<string>("all");
 
-  function setFilter(key: "doctor" | "grade", value: string) {
-    const params = new URLSearchParams(searchParams.toString());
-    if (value === "all") {
-      params.delete(key);
-    } else {
-      params.set(key, value);
-    }
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  // Restore filters from sessionStorage on mount
+  useEffect(() => {
+    setDoctorFilter(sessionStorage.getItem(SESSION_KEY_DOCTOR) ?? "all");
+    setGradeFilter(sessionStorage.getItem(SESSION_KEY_GRADE) ?? "all");
+  }, []);
+
+  function handleDoctorChange(value: string) {
+    setDoctorFilter(value);
+    sessionStorage.setItem(SESSION_KEY_DOCTOR, value);
+  }
+
+  function handleGradeChange(value: string) {
+    setGradeFilter(value);
+    sessionStorage.setItem(SESSION_KEY_GRADE, value);
   }
 
   const filtered = useMemo(() => {
@@ -57,7 +62,7 @@ export function DVStudyTable({ summaries, doctors }: DVStudyTableProps) {
       <div className="flex flex-wrap items-center gap-3">
         <select
           value={doctorFilter}
-          onChange={(e) => setFilter("doctor", e.target.value)}
+          onChange={(e) => handleDoctorChange(e.target.value)}
           className="h-8 rounded-md border border-input bg-background px-2 text-sm"
           aria-label="Filter by doctor"
         >
@@ -71,7 +76,7 @@ export function DVStudyTable({ summaries, doctors }: DVStudyTableProps) {
 
         <select
           value={gradeFilter}
-          onChange={(e) => setFilter("grade", e.target.value)}
+          onChange={(e) => handleGradeChange(e.target.value)}
           className="h-8 rounded-md border border-input bg-background px-2 text-sm"
           aria-label="Filter by grade"
         >
@@ -113,7 +118,7 @@ export function DVStudyTable({ summaries, doctors }: DVStudyTableProps) {
               <TableRow key={s.accession_number}>
                 <TableCell>
                   <Link
-                    href={`/studies/${s.accession_number}?back=${encodeURIComponent(searchParams.toString())}`}
+                    href={`/studies/${s.accession_number}`}
                     className="font-mono text-sm text-blue-600 hover:underline"
                   >
                     {s.accession_number}
