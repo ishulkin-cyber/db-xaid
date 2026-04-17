@@ -121,8 +121,6 @@ export default async function DoctorsPage({
     ? await getMIPS2bCountsByDoctor(prevFindings)
     : null;
 
-  const grade3Plus = stats.grade3 + stats.grade4;
-
   const g1Pct = stats.totalFindings > 0
     ? Math.round(stats.grade1 / stats.totalFindings * 1000) / 10
     : 0;
@@ -130,11 +128,17 @@ export default async function DoctorsPage({
     ? Math.round(stats.grade2a / stats.totalFindings * 1000) / 10
     : 0;
 
-  const grade3PlusPct = stats.totalFindings > 0
-    ? Math.round(grade3Plus / stats.totalFindings * 1000) / 10
+  const grade3Pct = stats.totalFindings > 0
+    ? Math.round(stats.grade3 / stats.totalFindings * 1000) / 10
     : 0;
-  const prevGrade3PlusPct = prevStats && prevStats.totalFindings > 0
-    ? Math.round((prevStats.grade3 + prevStats.grade4) / prevStats.totalFindings * 1000) / 10
+  const grade4Pct = stats.totalFindings > 0
+    ? Math.round(stats.grade4 / stats.totalFindings * 1000) / 10
+    : 0;
+  const prevGrade3Pct = prevStats && prevStats.totalFindings > 0
+    ? Math.round(prevStats.grade3 / prevStats.totalFindings * 1000) / 10
+    : null;
+  const prevGrade4Pct = prevStats && prevStats.totalFindings > 0
+    ? Math.round(prevStats.grade4 / prevStats.totalFindings * 1000) / 10
     : null;
 
   const avgClinicalConcordance =
@@ -188,7 +192,7 @@ export default async function DoctorsPage({
       )}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-6 gap-4">
+      <div className="grid grid-cols-7 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -276,17 +280,36 @@ export default async function DoctorsPage({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Grade 3+ (значимые)
+              Grade 3 (значимые)
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold text-red-600">
-              {grade3Plus}
+              {stats.grade3}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {grade3PlusPct}% находок
-              {prevGrade3PlusPct !== null && (
-                <PctDelta curr={grade3PlusPct} prev={prevGrade3PlusPct} invert />
+              {grade3Pct}% находок
+              {prevGrade3Pct !== null && (
+                <PctDelta curr={grade3Pct} prev={prevGrade3Pct} invert />
+              )}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Grade 4 (гипердиаг.)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-red-800">
+              {stats.grade4}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {grade4Pct}% находок
+              {prevGrade4Pct !== null && (
+                <PctDelta curr={grade4Pct} prev={prevGrade4Pct} invert />
               )}
             </p>
           </CardContent>
@@ -339,7 +362,8 @@ export default async function DoctorsPage({
                   <TableHead className="text-right">Клин. конкорд. %</TableHead>
                   <TableHead className="text-right">Grade 2b</TableHead>
                   <TableHead className="text-right">2b-MIPS</TableHead>
-                  <TableHead className="text-right">Grade 3+</TableHead>
+                  <TableHead className="text-right">Grade 3</TableHead>
+                  <TableHead className="text-right">Grade 4</TableHead>
                   <TableHead>Распределение</TableHead>
                 </TableRow>
               </TableHeader>
@@ -427,17 +451,33 @@ export default async function DoctorsPage({
                         })()}
                       </TableCell>
                       <TableCell className="text-right">
-                        {doc.grade3 + doc.grade4 > 0 ? (
-                          <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
-                            {doc.grade3 + doc.grade4}
+                        {doc.grade3 > 0 ? (
+                          <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                            {doc.grade3}
                           </span>
                         ) : (
                           <span className="text-muted-foreground">0</span>
                         )}
                         {prev && prev.total_findings > 0 && (
                           <PctDelta
-                            curr={Math.round((doc.grade3 + doc.grade4) / doc.total_findings * 1000) / 10}
-                            prev={Math.round((prev.grade3 + prev.grade4) / prev.total_findings * 1000) / 10}
+                            curr={Math.round(doc.grade3 / doc.total_findings * 1000) / 10}
+                            prev={Math.round(prev.grade3 / prev.total_findings * 1000) / 10}
+                            invert
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {doc.grade4 > 0 ? (
+                          <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-900">
+                            {doc.grade4}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">0</span>
+                        )}
+                        {prev && prev.total_findings > 0 && (
+                          <PctDelta
+                            curr={Math.round(doc.grade4 / doc.total_findings * 1000) / 10}
+                            prev={Math.round(prev.grade4 / prev.total_findings * 1000) / 10}
                             invert
                           />
                         )}
