@@ -89,6 +89,8 @@ interface DoctorImpact {
   doctor_name: string;
   total_studies: number;
   total_findings: number;
+  grade3: number;
+  grade4: number;
   grade3plus: number;
   grade3plusPct: number;
   mips2b: number;
@@ -602,8 +604,9 @@ export function SvodClient({
                 <th className="py-2 pr-4 text-left font-medium">Врач</th>
                 <th className="py-2 px-3 text-right font-medium">Исслед.</th>
                 <th className="py-2 px-3 text-right font-medium">Находок</th>
-                <th className="py-2 px-3 text-right font-medium">G3+ (кол.)</th>
-                <th className="py-2 px-3 text-right font-medium">G3+ (%)</th>
+                <th className="py-2 px-3 text-right font-medium">G3</th>
+                <th className="py-2 px-3 text-right font-medium">G4</th>
+                <th className="py-2 px-3 text-right font-medium">G3+G4 (%)</th>
                 <th className="py-2 px-3 text-right font-medium">2b-MIPS</th>
                 <th className="py-2 pl-3 text-right font-medium">Клин. конкорд.</th>
               </tr>
@@ -622,9 +625,18 @@ export function SvodClient({
                     <td className="py-2.5 px-3 text-right text-muted-foreground">{d.total_studies}</td>
                     <td className="py-2.5 px-3 text-right text-muted-foreground">{d.total_findings}</td>
                     <td className="py-2.5 px-3 text-right">
-                      {d.grade3plus > 0 ? (
+                      {d.grade3 > 0 ? (
                         <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
-                          {d.grade3plus}
+                          {d.grade3}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">0</span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 text-right">
+                      {d.grade4 > 0 ? (
+                        <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800">
+                          {d.grade4}
                         </span>
                       ) : (
                         <span className="text-muted-foreground">0</span>

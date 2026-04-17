@@ -69,6 +69,8 @@ export default async function SvodPage({ searchParams }: { searchParams: SearchP
       doctor_name:    d.doctor_name,
       total_studies:  d.total_studies,
       total_findings: d.total_findings,
+      grade3:         d.grade3,
+      grade4:         d.grade4,
       grade3plus:     d.grade3 + d.grade4,
       grade3plusPct:  d.total_findings > 0
         ? Math.round((d.grade3 + d.grade4) / d.total_findings * 1000) / 10
