@@ -45,8 +45,9 @@ export default async function DoctorDetailPage({ params }: DoctorDetailPageProps
   if (!doctor) notFound();
 
   const gradeData = getGradeDistribution(findings);
+  const mips2bCount = findings.filter((f) => f.grade === "2b" && f.mips_related).length;
 
-  const grades: Grade[] = ["1", "2a", "2b", "3", "4"];
+  const grades: Grade[] = ["1", "2a", "2b", "3", "4a", "4b"];
 
   return (
     <div className="space-y-8">
@@ -65,9 +66,16 @@ export default async function DoctorDetailPage({ params }: DoctorDetailPageProps
             if (count === 0) return null;
             const colors = gradeColors[g];
             return (
-              <Badge key={g} className={colors.badge}>
-                Grade {g}: {count}
-              </Badge>
+              <>
+                <Badge key={g} className={colors.badge}>
+                  Grade {g}: {count}
+                </Badge>
+                {g === "2b" && mips2bCount > 0 && (
+                  <Badge key="2b-mips" className="bg-amber-200 text-amber-900 border border-amber-500">
+                    2b-MIPS: {mips2bCount}
+                  </Badge>
+                )}
+              </>
             );
           })}
         </div>
@@ -107,7 +115,7 @@ export default async function DoctorDetailPage({ params }: DoctorDetailPageProps
             <CardTitle className="text-sm font-medium text-muted-foreground">Grade 3+ (значимые)</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-orange-600">{doctor.grade3 + doctor.grade4}</p>
+            <p className="text-3xl font-bold text-orange-600">{doctor.grade3 + doctor.grade4 + doctor.grade4b}</p>
           </CardContent>
         </Card>
       </div>

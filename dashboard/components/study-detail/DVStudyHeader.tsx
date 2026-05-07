@@ -28,7 +28,6 @@ export function DVStudyHeader({ summary }: DVStudyHeaderProps) {
           <div className="space-y-3">
             <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-xl font-semibold font-mono">{accession_number}</h2>
-              <GradeBadge grade={overall_grade} />
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">

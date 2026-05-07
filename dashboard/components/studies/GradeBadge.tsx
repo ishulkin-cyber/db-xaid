@@ -10,6 +10,9 @@ export function GradeBadge({ grade, mipsRelated }: { grade: Grade | string; mips
       </Badge>
     );
   }
+  if (grade === "4") {
+    return <Badge className="bg-rose-200 text-rose-900 border border-rose-600">4b</Badge>;
+  }
   if (grade === "4a") {
     return <Badge className="bg-orange-100 text-orange-800 border border-orange-400">4a</Badge>;
   }

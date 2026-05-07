@@ -60,11 +60,11 @@ const ROWS: RowDef[] = [
   },
   {
     key: "g4Pct",
-    label: "Grade 4 — гипердиагностика",
-    desc: "Значимые находки в отчёте врача, отсутствующие у валидатора",
+    label: "G4b — знач. гипердиагностика",
+    desc: "Значимый оверрепорт (grade 4b) — влияет на тактику",
     higherIsBetter: false,
-    color: "text-orange-600",
-    lineColor: "#ea580c",
+    color: "text-rose-700",
+    lineColor: "#be123c",
   },
 ];
 
@@ -90,7 +90,8 @@ interface DoctorImpact {
   total_studies: number;
   total_findings: number;
   grade3: number;
-  grade4: number;
+  grade4a: number;
+  grade4b: number;
   grade3plus: number;
   grade3plusPct: number;
   mips2b: number;
@@ -201,6 +202,16 @@ export function SvodClient({
       <Card>
         <CardHeader>
           <CardTitle>Целевые показатели</CardTitle>
+          {!currentPoint && fallback && (
+            <p className="text-xs text-amber-600 mt-1">
+              ⚠ Нет данных за {periodLabel} — показан последний доступный период: <strong>{fallback.label}</strong>
+            </p>
+          )}
+          {currentPoint && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Данные за: <strong>{currentPoint.label}</strong>
+            </p>
+          )}
         </CardHeader>
         <CardContent>
           <table className="w-full text-sm">
@@ -634,7 +645,8 @@ export function SvodClient({
                 <th className="py-2 px-3 text-right font-medium">Исслед.</th>
                 <th className="py-2 px-3 text-right font-medium">Находок</th>
                 <th className="py-2 px-3 text-right font-medium">G3</th>
-                <th className="py-2 px-3 text-right font-medium">G4</th>
+                <th className="py-2 px-3 text-right font-medium">4a</th>
+                <th className="py-2 px-3 text-right font-medium">4b</th>
                 <th className="py-2 px-3 text-right font-medium">G3+G4 (%)</th>
                 <th className="py-2 px-3 text-right font-medium">2b-MIPS</th>
                 <th className="py-2 pl-3 text-right font-medium">Клин. конкорд.</th>
@@ -663,9 +675,18 @@ export function SvodClient({
                       )}
                     </td>
                     <td className="py-2.5 px-3 text-right">
-                      {d.grade4 > 0 ? (
-                        <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800">
-                          {d.grade4}
+                      {d.grade4a > 0 ? (
+                        <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
+                          {d.grade4a}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">0</span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 text-right">
+                      {d.grade4b > 0 ? (
+                        <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-800">
+                          {d.grade4b}
                         </span>
                       ) : (
                         <span className="text-muted-foreground">0</span>

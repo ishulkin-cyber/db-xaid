@@ -10,11 +10,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { GradeBadge } from "@/components/studies/GradeBadge";
 import type { DVStudySummary, DoctorStats } from "@/lib/types";
 
 const SESSION_KEY_DOCTOR = "studies_filter_doctor";
-const SESSION_KEY_GRADE = "studies_filter_grade";
 
 function readSession(key: string): string {
   try {
@@ -29,12 +27,18 @@ interface DVStudyTableProps {
   doctors: DoctorStats[];
 }
 
+function GradeCell({ count, color }: { count: number; color: string }) {
+  if (count === 0) return <span className="text-muted-foreground">—</span>;
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${color}`}>
+      {count}
+    </span>
+  );
+}
+
 export function DVStudyTable({ summaries, doctors }: DVStudyTableProps) {
   const [doctorFilter, setDoctorFilter] = useState<string>(
     () => readSession(SESSION_KEY_DOCTOR)
-  );
-  const [gradeFilter, setGradeFilter] = useState<string>(
-    () => readSession(SESSION_KEY_GRADE)
   );
 
   function handleDoctorChange(value: string) {
@@ -42,29 +46,13 @@ export function DVStudyTable({ summaries, doctors }: DVStudyTableProps) {
     try { sessionStorage.setItem(SESSION_KEY_DOCTOR, value); } catch {}
   }
 
-  function handleGradeChange(value: string) {
-    setGradeFilter(value);
-    try { sessionStorage.setItem(SESSION_KEY_GRADE, value); } catch {}
-  }
-
   const filtered = useMemo(() => {
-    let result = summaries;
-    if (doctorFilter !== "all") {
-      result = result.filter((s) => String(s.doctor_id) === doctorFilter);
-    }
-    if (gradeFilter === "2b-mips") {
-      result = result.filter((s) => s.overall_grade === "2b" && s.mips2b_count > 0);
-    } else if (gradeFilter === "2b-only") {
-      result = result.filter((s) => s.overall_grade === "2b" && s.mips2b_count === 0);
-    } else if (gradeFilter !== "all") {
-      result = result.filter((s) => s.overall_grade === gradeFilter);
-    }
-    return result;
-  }, [summaries, doctorFilter, gradeFilter]);
+    if (doctorFilter === "all") return summaries;
+    return summaries.filter((s) => String(s.doctor_id) === doctorFilter);
+  }, [summaries, doctorFilter]);
 
   return (
     <div className="space-y-4">
-      {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-3">
         <select
           value={doctorFilter}
@@ -80,23 +68,6 @@ export function DVStudyTable({ summaries, doctors }: DVStudyTableProps) {
           ))}
         </select>
 
-        <select
-          value={gradeFilter}
-          onChange={(e) => handleGradeChange(e.target.value)}
-          className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-          aria-label="Filter by grade"
-        >
-          <option value="all">Все оценки</option>
-          <option value="1">Grade 1</option>
-          <option value="2a">Grade 2a</option>
-          <option value="2b-only">Grade 2b (без MIPS)</option>
-          <option value="2b-mips">Grade 2b-MIPS</option>
-          <option value="3">Grade 3</option>
-          <option value="4">Grade 4 (legacy)</option>
-          <option value="4a">Grade 4a (мин. гипердиаг.)</option>
-          <option value="4b">Grade 4b (знач. гипердиаг.)</option>
-        </select>
-
         <span className="text-sm text-muted-foreground">
           {filtered.length} из {summaries.length} исследований
         </span>
@@ -107,17 +78,20 @@ export function DVStudyTable({ summaries, doctors }: DVStudyTableProps) {
           <TableRow>
             <TableHead>Номер</TableHead>
             <TableHead>Врач</TableHead>
-            <TableHead>Оценка</TableHead>
             <TableHead className="text-right">Находки</TableHead>
-            <TableHead className="text-right">G2b</TableHead>
+            <TableHead className="text-right">2a</TableHead>
+            <TableHead className="text-right">2b</TableHead>
             <TableHead className="text-right">2b-MIPS</TableHead>
+            <TableHead className="text-right">3</TableHead>
+            <TableHead className="text-right">4a</TableHead>
+            <TableHead className="text-right">4b</TableHead>
             <TableHead>Ключевые расхождения</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filtered.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
+              <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">
                 Нет исследований по выбранным фильтрам.
               </TableCell>
             </TableRow>
@@ -140,36 +114,27 @@ export function DVStudyTable({ summaries, doctors }: DVStudyTableProps) {
                     {s.doctor_name}
                   </Link>
                 </TableCell>
-                <TableCell>
-                  {s.overall_grade === "2b" && s.mips2b_count > 0 ? (
-                    <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900 border border-amber-300">
-                      2b-MIPS
-                    </span>
-                  ) : (
-                    <GradeBadge grade={s.overall_grade} />
-                  )}
-                </TableCell>
                 <TableCell className="text-right">{s.total_findings}</TableCell>
                 <TableCell className="text-right">
-                  {s.minor_clinical_count > 0 ? (
-                    <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-                      {s.minor_clinical_count}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">0</span>
-                  )}
+                  <GradeCell count={s.stylistic_count} color="bg-blue-100 text-blue-700" />
                 </TableCell>
                 <TableCell className="text-right">
-                  {s.mips2b_count > 0 ? (
-                    <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
-                      {s.mips2b_count}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">0</span>
-                  )}
+                  <GradeCell count={s.minor_clinical_count} color="bg-amber-100 text-amber-800" />
+                </TableCell>
+                <TableCell className="text-right">
+                  <GradeCell count={s.mips2b_count} color="bg-amber-100 text-amber-900 border border-amber-300" />
+                </TableCell>
+                <TableCell className="text-right">
+                  <GradeCell count={s.significant_underreport_count} color="bg-red-100 text-red-700" />
+                </TableCell>
+                <TableCell className="text-right">
+                  <GradeCell count={s.minor_overreport_count} color="bg-orange-100 text-orange-700" />
+                </TableCell>
+                <TableCell className="text-right">
+                  <GradeCell count={s.significant_overreport_count} color="bg-rose-100 text-rose-800" />
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
-                  {s.key_discrepancies.join(", ") || "\u2014"}
+                  {s.key_discrepancies.join(", ") || "—"}
                 </TableCell>
               </TableRow>
             ))

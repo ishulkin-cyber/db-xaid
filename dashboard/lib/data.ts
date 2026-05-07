@@ -243,8 +243,7 @@ export async function getDoctorStudies(doctorId: number): Promise<DVStudySummary
     const discrepancies = accFindings.filter((f) => f.grade !== "1").length;
     const mips2b = mipsAccMap.get(acc) ?? 0;
     let overallGrade: Grade | "N/A" = "N/A";
-    if (g4b > 0) overallGrade = "4b";
-    else if (g4 > 0) overallGrade = "4";
+    if (g4b > 0 || g4 > 0) overallGrade = "4b";
     else if (g3 > 0) overallGrade = "3";
     else if (g4a > 0) overallGrade = "4a";
     else if (g2b > 0) overallGrade = "2b";
@@ -322,8 +321,7 @@ export async function getDVStudySummaries(): Promise<DVStudySummary[]> {
     const discrepancies = accFindings.filter((f) => f.grade !== "1").length;
     const mips2b = mipsAccMap.get(acc) ?? 0;
     let overallGrade: Grade | "N/A" = "N/A";
-    if (g4b > 0) overallGrade = "4b";
-    else if (g4 > 0) overallGrade = "4";
+    if (g4b > 0 || g4 > 0) overallGrade = "4b";
     else if (g3 > 0) overallGrade = "3";
     else if (g4a > 0) overallGrade = "4a";
     else if (g2b > 0) overallGrade = "2b";
@@ -485,8 +483,8 @@ export async function getGradeTrendData(mode: "week" | "month" | "year" = "month
         g2bPct: pct(g2b, total),
         g2bNonMipsPct: pct(nonMips2b, total),
         g2bMipsPct: pct(mips2b, total),
-        g3PlusPct: pct(g3 + g4 + g4b, total),
-        g4Pct: pct(g4, total),
+        g3PlusPct: pct(g3, total),
+        g4Pct: pct(g4 + g4b, total),
         g4aPct: pct(g4a, total),
         g4bPct: pct(g4b, total),
         totalFindings: total,

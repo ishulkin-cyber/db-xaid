@@ -131,16 +131,16 @@ export default async function DoctorsPage({
   const grade3Pct = stats.totalFindings > 0
     ? Math.round(stats.grade3 / stats.totalFindings * 1000) / 10
     : 0;
-  const grade4Pct = stats.totalFindings > 0
-    ? Math.round((stats.grade4 + stats.grade4b) / stats.totalFindings * 1000) / 10
-    : 0;
   const grade4aPct = stats.totalFindings > 0
     ? Math.round(stats.grade4a / stats.totalFindings * 1000) / 10
+    : 0;
+  const grade4bPct = stats.totalFindings > 0
+    ? Math.round((stats.grade4 + stats.grade4b) / stats.totalFindings * 1000) / 10
     : 0;
   const prevGrade3Pct = prevStats && prevStats.totalFindings > 0
     ? Math.round(prevStats.grade3 / prevStats.totalFindings * 1000) / 10
     : null;
-  const prevGrade4Pct = prevStats && prevStats.totalFindings > 0
+  const prevGrade4bPct = prevStats && prevStats.totalFindings > 0
     ? Math.round((prevStats.grade4 + prevStats.grade4b) / prevStats.totalFindings * 1000) / 10
     : null;
 
@@ -195,9 +195,9 @@ export default async function DoctorsPage({
       )}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-7 gap-4">
+      <div className="grid grid-cols-9 gap-4">
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 min-h-[3.5rem]">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Всего исследований
             </CardTitle>
@@ -216,7 +216,7 @@ export default async function DoctorsPage({
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 min-h-[3.5rem]">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Врачей
             </CardTitle>
@@ -228,7 +228,7 @@ export default async function DoctorsPage({
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 min-h-[3.5rem]">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Средняя клин. конкорд.
             </CardTitle>
@@ -246,9 +246,26 @@ export default async function DoctorsPage({
           </CardContent>
         </Card>
 
+        {/* Grade 2a */}
+        <Card>
+          <CardHeader className="pb-2 min-h-[3.5rem]">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Grade 2a (стилистика)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-blue-500">
+              {stats.grade2a}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {g2aPct}% находок
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Grade 2b non-MIPS */}
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 min-h-[3.5rem]">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Grade 2b (мин. клин.)
             </CardTitle>
@@ -265,7 +282,7 @@ export default async function DoctorsPage({
 
         {/* Grade 2b-MIPS */}
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 min-h-[3.5rem]">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Grade 2b-MIPS
             </CardTitle>
@@ -281,7 +298,7 @@ export default async function DoctorsPage({
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 min-h-[3.5rem]">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Grade 3 (значимые)
             </CardTitle>
@@ -299,8 +316,26 @@ export default async function DoctorsPage({
           </CardContent>
         </Card>
 
+        {/* Grade 4a */}
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 min-h-[3.5rem]">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Grade 4a (мин. гипердиаг.)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-orange-500">
+              {stats.grade4a}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {grade4aPct}% находок
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Grade 4b */}
+        <Card>
+          <CardHeader className="pb-2 min-h-[3.5rem]">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Grade 4b (знач. гипердиаг.)
             </CardTitle>
@@ -310,9 +345,9 @@ export default async function DoctorsPage({
               {stats.grade4 + stats.grade4b}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {grade4Pct}% · 4a: {stats.grade4a} ({grade4aPct}%)
-              {prevGrade4Pct !== null && (
-                <PctDelta curr={grade4Pct} prev={prevGrade4Pct} invert />
+              {grade4bPct}% находок
+              {prevGrade4bPct !== null && (
+                <PctDelta curr={grade4bPct} prev={prevGrade4bPct} invert />
               )}
             </p>
           </CardContent>
@@ -365,10 +400,12 @@ export default async function DoctorsPage({
                   <TableHead className="text-right">Исследования</TableHead>
                   <TableHead className="text-right">Находки</TableHead>
                   <TableHead className="text-right">Клин. конкорд. %</TableHead>
-                  <TableHead className="text-right">Grade 2b</TableHead>
+                  <TableHead className="text-right">2a</TableHead>
+                  <TableHead className="text-right">2b</TableHead>
                   <TableHead className="text-right">2b-MIPS</TableHead>
-                  <TableHead className="text-right">Grade 3</TableHead>
-                  <TableHead className="text-right">Grade 4</TableHead>
+                  <TableHead className="text-right">3</TableHead>
+                  <TableHead className="text-right">4a</TableHead>
+                  <TableHead className="text-right">4b</TableHead>
                   <TableHead>Распределение</TableHead>
                 </TableRow>
               </TableHeader>
@@ -412,6 +449,15 @@ export default async function DoctorsPage({
                             curr={doc.clinicalConcordance}
                             prev={prev.clinicalConcordance}
                           />
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {doc.grade2a > 0 ? (
+                          <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                            {doc.grade2a}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">0</span>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
@@ -472,17 +518,26 @@ export default async function DoctorsPage({
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        {doc.grade4 > 0 ? (
-                          <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-900">
-                            {doc.grade4}
+                        {doc.grade4a > 0 ? (
+                          <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
+                            {doc.grade4a}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">0</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {(doc.grade4 + doc.grade4b) > 0 ? (
+                          <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-800">
+                            {doc.grade4 + doc.grade4b}
                           </span>
                         ) : (
                           <span className="text-muted-foreground">0</span>
                         )}
                         {prev && prev.total_findings > 0 && (
                           <PctDelta
-                            curr={Math.round(doc.grade4 / doc.total_findings * 1000) / 10}
-                            prev={Math.round(prev.grade4 / prev.total_findings * 1000) / 10}
+                            curr={Math.round((doc.grade4 + doc.grade4b) / doc.total_findings * 1000) / 10}
+                            prev={Math.round((prev.grade4 + prev.grade4b) / prev.total_findings * 1000) / 10}
                             invert
                           />
                         )}

@@ -70,10 +70,11 @@ export default async function SvodPage({ searchParams }: { searchParams: SearchP
       total_studies:  d.total_studies,
       total_findings: d.total_findings,
       grade3:         d.grade3,
-      grade4:         d.grade4,
-      grade3plus:     d.grade3 + d.grade4,
+      grade4a:        d.grade4a,
+      grade4b:        d.grade4 + d.grade4b,
+      grade3plus:     d.grade3 + d.grade4 + d.grade4b,
       grade3plusPct:  d.total_findings > 0
-        ? Math.round((d.grade3 + d.grade4) / d.total_findings * 1000) / 10
+        ? Math.round((d.grade3 + d.grade4 + d.grade4b) / d.total_findings * 1000) / 10
         : 0,
       mips2b:    mipsMap.get(d.doctor_id) ?? 0,
       mips2bPct: d.total_findings > 0
