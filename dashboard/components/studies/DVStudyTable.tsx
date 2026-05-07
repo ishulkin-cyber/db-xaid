@@ -92,7 +92,9 @@ export function DVStudyTable({ summaries, doctors }: DVStudyTableProps) {
           <option value="2b-only">Grade 2b (без MIPS)</option>
           <option value="2b-mips">Grade 2b-MIPS</option>
           <option value="3">Grade 3</option>
-          <option value="4">Grade 4</option>
+          <option value="4">Grade 4 (legacy)</option>
+          <option value="4a">Grade 4a (мин. гипердиаг.)</option>
+          <option value="4b">Grade 4b (знач. гипердиаг.)</option>
         </select>
 
         <span className="text-sm text-muted-foreground">

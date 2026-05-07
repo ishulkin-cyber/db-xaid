@@ -1,5 +1,6 @@
-export type Grade = "1" | "2a" | "2b" | "3" | "4";
+export type Grade = "1" | "2a" | "2b" | "3" | "4" | "4a" | "4b";
 export type DiscrepancyType = "concordant" | "stylistic" | "underreport" | "overreport";
+export type ReportingStandardGrade = "compliant" | "non_compliant" | "partial" | "not_assessed";
 
 export interface DVFinding {
   accession_number: string;
@@ -15,9 +16,14 @@ export interface DVFinding {
   notes: string;
   doctor_name: string;
   doctor_id: number;
-  exam_date?: string; // populated by extraction script
+  exam_date?: string;
   mips_related?: boolean;
   mips_measure?: string | null;
+  mips_driven?: boolean;
+  mips_rationale?: string;
+  reporting_standard_grade?: ReportingStandardGrade;
+  reporting_violations?: string[];
+  grader_version?: string;
 }
 
 export interface MIPSStat {
@@ -52,6 +58,7 @@ export interface DVStudySummary {
   minor_clinical_count: number;
   significant_underreport_count: number;
   significant_overreport_count: number;
+  minor_overreport_count: number;
   discrepancy_count: number;
   mips2b_count: number;
   key_discrepancies: string[];
@@ -80,6 +87,8 @@ export interface DoctorStats {
   grade2b: number;
   grade3: number;
   grade4: number;
+  grade4a: number;
+  grade4b: number;
   concordance: number;
   clinicalConcordance: number;
   significantRate: number;
@@ -96,4 +105,6 @@ export interface TrendDataPoint {
   grade2b: number;
   grade3: number;
   grade4: number;
+  grade4a: number;
+  grade4b: number;
 }

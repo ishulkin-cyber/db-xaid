@@ -132,13 +132,16 @@ export default async function DoctorsPage({
     ? Math.round(stats.grade3 / stats.totalFindings * 1000) / 10
     : 0;
   const grade4Pct = stats.totalFindings > 0
-    ? Math.round(stats.grade4 / stats.totalFindings * 1000) / 10
+    ? Math.round((stats.grade4 + stats.grade4b) / stats.totalFindings * 1000) / 10
+    : 0;
+  const grade4aPct = stats.totalFindings > 0
+    ? Math.round(stats.grade4a / stats.totalFindings * 1000) / 10
     : 0;
   const prevGrade3Pct = prevStats && prevStats.totalFindings > 0
     ? Math.round(prevStats.grade3 / prevStats.totalFindings * 1000) / 10
     : null;
   const prevGrade4Pct = prevStats && prevStats.totalFindings > 0
-    ? Math.round(prevStats.grade4 / prevStats.totalFindings * 1000) / 10
+    ? Math.round((prevStats.grade4 + prevStats.grade4b) / prevStats.totalFindings * 1000) / 10
     : null;
 
   const avgClinicalConcordance =
@@ -299,15 +302,15 @@ export default async function DoctorsPage({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Grade 4 (гипердиаг.)
+              Grade 4b (знач. гипердиаг.)
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-red-800">
-              {stats.grade4}
+            <p className="text-3xl font-bold text-rose-800">
+              {stats.grade4 + stats.grade4b}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {grade4Pct}% находок
+              {grade4Pct}% · 4a: {stats.grade4a} ({grade4aPct}%)
               {prevGrade4Pct !== null && (
                 <PctDelta curr={grade4Pct} prev={prevGrade4Pct} invert />
               )}
@@ -325,7 +328,9 @@ export default async function DoctorsPage({
           { color: "bg-amber-400",   label: "G2b — мин. клин." },
           { color: "bg-amber-600",   label: "G2b-MIPS — compliance" },
           { color: "bg-red-500",     label: "G3 — значимый пропуск" },
-          { color: "bg-red-500",     label: "G4 — гипердиагностика" },
+          { color: "bg-red-700",     label: "G4 — гипердиаг. (legacy)" },
+          { color: "bg-orange-400",  label: "G4a — мин. гипердиаг." },
+          { color: "bg-rose-700",    label: "G4b — знач. гипердиаг." },
         ].map(({ color, label }) => (
           <span key={label} className="flex items-center gap-1.5">
             <span className={`inline-block h-3 w-3 rounded-sm ${color}`} />
@@ -490,6 +495,8 @@ export default async function DoctorsPage({
                           grade2bMips={mips2bByDoctor.get(doc.doctor_id) ?? 0}
                           grade3={doc.grade3}
                           grade4={doc.grade4}
+                          grade4a={doc.grade4a}
+                          grade4b={doc.grade4b}
                           total={doc.total_findings}
                         />
                       </TableCell>

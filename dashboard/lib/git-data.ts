@@ -17,7 +17,10 @@ const REPO_URL = "https://git.xaid.ai/telerad/dashboards-data.git";
 const LOCAL_DIR = path.join(os.tmpdir(), "dashboards-data");
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-let lastClone = 0;
+// If data dir already exists on process start (e.g. pre-populated), treat as fresh clone.
+let lastClone = fs.existsSync(path.join(os.tmpdir(), "dashboards-data", ".git"))
+  ? Date.now()
+  : 0;
 let cloneInProgress: Promise<void> | null = null;
 
 function getToken(): string {

@@ -13,52 +13,13 @@ import type {
 import { pct } from "./utils";
 import { readRepoJSON } from "./git-data";
 
-// --- MIPS classifier (TypeScript port of analysis/classify_2b_mips.py) ---
+// --- MIPS types ---
 
 type ClassifiedFinding = DVFinding & { mips_related: boolean; mips_measure: string | null };
 
-const ACRAD44_CATS = new Set(["coronary artery calcification","coronary calcification","coronary artery calcification severity","coronary and vascular calcification","coronary calcification impression detail","coronary calcification in findings section"]);
-const M364_CATS = new Set(["pulmonary nodule","pulmonary nodules","pulmonary micronodule","pulmonary micronodules","micronodules","scattered micronodules","left upper lobe nodule","left lower lobe nodule","right upper lobe nodule","fleischner recommendation","fleischner follow-up recommendation","fleischner applicability","fleischner recommendation — growth assessment","fleischner recommendation for rml nodule","pulmonary nodule follow-up recommendation","nodule follow-up recommendation","nodule growth assessment","part-solid nodule","ground glass nodule","perifissural nodules","solitary solid nodules","centrilobular micronodules / bronchiolitis","tree-in-bud nodules / bronchiolitis","prior nodule status","pulmonary cyst/nodule","pulmonary nodules — right lower lobe","lung-rads classification","lung cancer screening recommendation","centrilobular nodules"]);
-const M364_SUB = ["nodule","micronodule","fleischner","lung-rads"];
-const M405_CATS = new Set(["renal cyst","kidney cyst","left renal cyst","renal finding","adrenal gland finding","adrenal finding","left adrenal lesion","left adrenal gland thickening","left adrenal thickening"]);
-const M405_SUB = ["adrenal","bosniak","renal cyst","kidney cyst"];
-const M406_CATS = new Set(["thyroid nodule","thyroid finding","thyroid lesion","thyroid abnormality","left thyroid nodule","right thyroid lesion","thyroid nodules","substernal thyroid extension"]);
-const M406_SUB = ["thyroid"];
-const QMM23_CATS = new Set(["emphysema","centrilobular emphysema","small airways obstruction / copd","lung cancer screening recommendation"]);
-const QMM23_SUB = ["emphysema"];
-const NON_MIPS = ["coronary artery bypass grafting","cabg","left thyroid lobectomy","sternal sutures"];
-const QMM23_CONFIRM = ["ldct","lung cancer screening","independent risk factor","screening recommendation","low dose ct","low-dose ct"];
-
-function catMatches(cat: string, exact: Set<string>, subs: string[]): boolean {
-  if (exact.has(cat)) return true;
-  return subs.some((s) => cat.includes(s));
-}
-function notesConfirm(r: DVFinding, kw: string[]): boolean {
-  const t = [(r.notes ?? ""), (r.validator_description ?? ""), (r.doctor_description ?? "")].join(" ").toLowerCase();
-  return kw.some((k) => t.includes(k));
-}
-function classifyRecord(r: DVFinding): [boolean, string | null] {
-  const cat = (r.finding_category ?? "").toLowerCase().trim();
-  if (NON_MIPS.some((o) => cat.includes(o))) return [false, null];
-  if (catMatches(cat, ACRAD44_CATS, ["coronary"])) {
-    if (cat.includes("bypass") || cat.includes("cabg")) return [false, null];
-    return [true, "ACRad44"];
-  }
-  if (!cat.includes("thyroid") && catMatches(cat, M364_CATS, M364_SUB)) return [true, "364"];
-  if (catMatches(cat, M405_CATS, M405_SUB)) return [true, "405"];
-  if (catMatches(cat, M406_CATS, M406_SUB)) {
-    if (cat.includes("lobectomy") || (r.notes ?? "").toLowerCase().includes("lobectomy")) return [false, null];
-    return [true, "406"];
-  }
-  if (catMatches(cat, QMM23_CATS, QMM23_SUB)) {
-    return notesConfirm(r, QMM23_CONFIRM) ? [true, "QMM23"] : [false, null];
-  }
-  return [false, null];
-}
-
 // --- Raw data loaders (cached per request via React cache()) ---
 
-// Reads findings from GitLab and joins exam_date from excel_reports.json
+// Reads findings from GitLab, joins exam_date, and maps mips_driven → mips_related
 export const getDVFindings = cache(async (): Promise<DVFinding[]> => {
   const [raw, excel] = await Promise.all([
     readRepoJSON<Omit<DVFinding, "exam_date">[]>("dv_combined_analysis.json"),
@@ -67,6 +28,7 @@ export const getDVFindings = cache(async (): Promise<DVFinding[]> => {
   return raw.map((f) => ({
     ...f,
     exam_date: excel[f.accession_number]?.sheet_date ?? null,
+    mips_related: (f as DVFinding).mips_driven ?? false,
   } as DVFinding));
 });
 
@@ -75,15 +37,16 @@ export const getDoctorValidatorPairs = cache(
     readRepoJSON<DoctorValidatorPair[]>("doctor_validator_pairs.json")
 );
 
-// Classifies 2b findings using the TypeScript-ported MIPS rules (dv_combined_analysis.json has no mips fields)
+// Returns all grade-2b findings with mips_related/mips_measure sourced directly from JSON
 export const getMIPSClassifiedFindings = cache(async (): Promise<ClassifiedFinding[]> => {
   const findings = await getDVFindings();
   return findings
     .filter((f) => f.grade === "2b")
-    .map((f) => {
-      const [mips_related, mips_measure] = classifyRecord(f);
-      return { ...f, mips_related, mips_measure };
-    });
+    .map((f) => ({
+      ...f,
+      mips_related: f.mips_related ?? false,
+      mips_measure: f.mips_measure ?? null,
+    }));
 });
 
 // --- Period filtering (sync, pure) ---
@@ -107,14 +70,16 @@ export function getOverallStatsFromFindings(findings: DVFinding[]) {
   const grade2b = findings.filter((f) => f.grade === "2b").length;
   const grade3  = findings.filter((f) => f.grade === "3").length;
   const grade4  = findings.filter((f) => f.grade === "4").length;
+  const grade4a = findings.filter((f) => f.grade === "4a").length;
+  const grade4b = findings.filter((f) => f.grade === "4b").length;
   const totalStudies = new Set(findings.map((f) => f.accession_number)).size;
   const totalDoctors = new Set(findings.map((f) => f.doctor_id)).size;
   return {
     totalStudies, totalDoctors, totalFindings: total,
-    grade1, grade2a, grade2b, grade3, grade4,
+    grade1, grade2a, grade2b, grade3, grade4, grade4a, grade4b,
     concordance: pct(grade1, total),
     clinicalConcordance: pct(grade1 + grade2a, total),
-    significantRate: pct(grade3 + grade4, total),
+    significantRate: pct(grade3 + grade4 + grade4b, total),
   };
 }
 
@@ -131,6 +96,8 @@ export function getDoctorStatsListFromFindings(findings: DVFinding[]): DoctorSta
       const g2b = df.filter((f) => f.grade === "2b").length;
       const g3  = df.filter((f) => f.grade === "3").length;
       const g4  = df.filter((f) => f.grade === "4").length;
+      const g4a = df.filter((f) => f.grade === "4a").length;
+      const g4b = df.filter((f) => f.grade === "4b").length;
       const catCounts: Record<string, number> = {};
       for (const f of df.filter((f) => f.grade !== "1")) {
         catCounts[f.finding_category] = (catCounts[f.finding_category] ?? 0) + 1;
@@ -142,10 +109,10 @@ export function getDoctorStatsListFromFindings(findings: DVFinding[]): DoctorSta
       return {
         doctor_id: id, doctor_name: doctorName,
         total_studies: accessions.length, total_findings: total,
-        grade1: g1, grade2a: g2a, grade2b: g2b, grade3: g3, grade4: g4,
+        grade1: g1, grade2a: g2a, grade2b: g2b, grade3: g3, grade4: g4, grade4a: g4a, grade4b: g4b,
         concordance: pct(g1, total),
         clinicalConcordance: pct(g1 + g2a, total),
-        significantRate: pct(g3 + g4, total),
+        significantRate: pct(g3 + g4 + g4b, total),
         topCategories,
       } satisfies DoctorStats;
     })
@@ -158,11 +125,13 @@ export function getGradeDistribution(
   findings: DVFinding[]
 ): { grade: Grade; count: number; label: string }[] {
   const grades: { grade: Grade; label: string }[] = [
-    { grade: "1", label: "Concordant" },
+    { grade: "1",  label: "Concordant" },
     { grade: "2a", label: "Minor Stylistic" },
     { grade: "2b", label: "Minor Clinical" },
-    { grade: "3", label: "Significant Underreport" },
-    { grade: "4", label: "Significant Overreport" },
+    { grade: "3",  label: "Significant Underreport" },
+    { grade: "4",  label: "Significant Overreport (legacy)" },
+    { grade: "4a", label: "Minor Overreport" },
+    { grade: "4b", label: "Significant Overreport" },
   ];
   return grades.map(({ grade, label }) => ({
     grade,
@@ -181,16 +150,16 @@ export async function getOverallStats() {
   const grade2b = findings.filter((f) => f.grade === "2b").length;
   const grade3  = findings.filter((f) => f.grade === "3").length;
   const grade4  = findings.filter((f) => f.grade === "4").length;
-  const allAccessions = [...new Set(findings.map((f) => f.accession_number))];
-  const totalStudies = allAccessions.length;
-  const allDoctorIds = [...new Set(findings.map((f) => f.doctor_id))];
-  const totalDoctors = allDoctorIds.length;
+  const grade4a = findings.filter((f) => f.grade === "4a").length;
+  const grade4b = findings.filter((f) => f.grade === "4b").length;
+  const totalStudies = new Set(findings.map((f) => f.accession_number)).size;
+  const totalDoctors = new Set(findings.map((f) => f.doctor_id)).size;
   return {
     totalStudies, totalDoctors, totalFindings: total,
-    grade1, grade2a, grade2b, grade3, grade4,
+    grade1, grade2a, grade2b, grade3, grade4, grade4a, grade4b,
     concordance: pct(grade1, total),
     clinicalConcordance: pct(grade1 + grade2a, total),
-    significantRate: pct(grade3 + grade4, total),
+    significantRate: pct(grade3 + grade4 + grade4b, total),
   };
 }
 
@@ -210,6 +179,8 @@ export async function getDoctorStatsList(): Promise<DoctorStats[]> {
       const g2b = doctorFindings.filter((f) => f.grade === "2b").length;
       const g3  = doctorFindings.filter((f) => f.grade === "3").length;
       const g4  = doctorFindings.filter((f) => f.grade === "4").length;
+      const g4a = doctorFindings.filter((f) => f.grade === "4a").length;
+      const g4b = doctorFindings.filter((f) => f.grade === "4b").length;
       const errorFindings = doctorFindings.filter((f) => f.grade !== "1");
       const catCounts: Record<string, number> = {};
       for (const f of errorFindings) {
@@ -222,10 +193,10 @@ export async function getDoctorStatsList(): Promise<DoctorStats[]> {
       return {
         doctor_id: id, doctor_name: doctorName,
         total_studies: accessions.length, total_findings: total,
-        grade1: g1, grade2a: g2a, grade2b: g2b, grade3: g3, grade4: g4,
+        grade1: g1, grade2a: g2a, grade2b: g2b, grade3: g3, grade4: g4, grade4a: g4a, grade4b: g4b,
         concordance: pct(g1, total),
         clinicalConcordance: pct(g1 + g2a, total),
-        significantRate: pct(g3 + g4, total),
+        significantRate: pct(g3 + g4 + g4b, total),
         topCategories,
       } satisfies DoctorStats;
     })
@@ -267,23 +238,28 @@ export async function getDoctorStudies(doctorId: number): Promise<DVStudySummary
     const g2b = accFindings.filter((f) => f.grade === "2b").length;
     const g3  = accFindings.filter((f) => f.grade === "3").length;
     const g4  = accFindings.filter((f) => f.grade === "4").length;
+    const g4a = accFindings.filter((f) => f.grade === "4a").length;
+    const g4b = accFindings.filter((f) => f.grade === "4b").length;
     const discrepancies = accFindings.filter((f) => f.grade !== "1").length;
     const mips2b = mipsAccMap.get(acc) ?? 0;
     let overallGrade: Grade | "N/A" = "N/A";
-    if (g4 > 0) overallGrade = "4";
+    if (g4b > 0) overallGrade = "4b";
+    else if (g4 > 0) overallGrade = "4";
     else if (g3 > 0) overallGrade = "3";
+    else if (g4a > 0) overallGrade = "4a";
     else if (g2b > 0) overallGrade = "2b";
     else if (g2a > 0) overallGrade = "2a";
     else if (g1 > 0) overallGrade = "1";
     const keyDiscrepancies = accFindings
-      .filter((f) => f.grade === "3" || f.grade === "4")
+      .filter((f) => f.grade === "3" || f.grade === "4" || f.grade === "4b")
       .map((f) => f.finding_category)
       .slice(0, 3);
     return {
       accession_number: acc, doctor_name: doctorName, doctor_id: doctorId,
       overall_grade: overallGrade, total_findings: total,
       concordant_count: g1, stylistic_count: g2a, minor_clinical_count: g2b,
-      significant_underreport_count: g3, significant_overreport_count: g4,
+      significant_underreport_count: g3, significant_overreport_count: g4 + g4b,
+      minor_overreport_count: g4a,
       discrepancy_count: discrepancies, mips2b_count: mips2b,
       key_discrepancies: keyDiscrepancies,
     } satisfies DVStudySummary;
@@ -305,12 +281,14 @@ export async function getDoctorTrendByDate(doctorId: number): Promise<TrendDataP
     const g2b = dayFindings.filter((f) => f.grade === "2b").length;
     const g3  = dayFindings.filter((f) => f.grade === "3").length;
     const g4  = dayFindings.filter((f) => f.grade === "4").length;
+    const g4a = dayFindings.filter((f) => f.grade === "4a").length;
+    const g4b = dayFindings.filter((f) => f.grade === "4b").length;
     return {
       date,
       concordance: pct(g1, total),
       clinicalConcordance: pct(g1 + g2a, total),
       totalFindings: total,
-      grade1: g1, grade2a: g2a, grade2b: g2b, grade3: g3, grade4: g4,
+      grade1: g1, grade2a: g2a, grade2b: g2b, grade3: g3, grade4: g4, grade4a: g4a, grade4b: g4b,
     };
   });
 }
@@ -339,23 +317,28 @@ export async function getDVStudySummaries(): Promise<DVStudySummary[]> {
     const g2b = accFindings.filter((f) => f.grade === "2b").length;
     const g3  = accFindings.filter((f) => f.grade === "3").length;
     const g4  = accFindings.filter((f) => f.grade === "4").length;
+    const g4a = accFindings.filter((f) => f.grade === "4a").length;
+    const g4b = accFindings.filter((f) => f.grade === "4b").length;
     const discrepancies = accFindings.filter((f) => f.grade !== "1").length;
     const mips2b = mipsAccMap.get(acc) ?? 0;
     let overallGrade: Grade | "N/A" = "N/A";
-    if (g4 > 0) overallGrade = "4";
+    if (g4b > 0) overallGrade = "4b";
+    else if (g4 > 0) overallGrade = "4";
     else if (g3 > 0) overallGrade = "3";
+    else if (g4a > 0) overallGrade = "4a";
     else if (g2b > 0) overallGrade = "2b";
     else if (g2a > 0) overallGrade = "2a";
     else if (g1 > 0) overallGrade = "1";
     const keyDiscrepancies = accFindings
-      .filter((f) => f.grade === "3" || f.grade === "4")
+      .filter((f) => f.grade === "3" || f.grade === "4" || f.grade === "4b")
       .map((f) => f.finding_category)
       .slice(0, 3);
     return {
       accession_number: acc, doctor_name: doctorName, doctor_id: doctorId,
       overall_grade: overallGrade, total_findings: total,
       concordant_count: g1, stylistic_count: g2a, minor_clinical_count: g2b,
-      significant_underreport_count: g3, significant_overreport_count: g4,
+      significant_underreport_count: g3, significant_overreport_count: g4 + g4b,
+      minor_overreport_count: g4a,
       discrepancy_count: discrepancies, mips2b_count: mips2b,
       key_discrepancies: keyDiscrepancies,
     } satisfies DVStudySummary;
@@ -370,13 +353,7 @@ export async function getStudyDetail(accession: string) {
     getDoctorValidatorPairs(),
     getDVStudySummaries(),
   ]);
-  const accFindings = findings
-    .filter((f) => f.accession_number === accession)
-    .map((f) => {
-      if (f.grade !== "2b") return f;
-      const [mips_related, mips_measure] = classifyRecord(f);
-      return { ...f, mips_related, mips_measure };
-    });
+  const accFindings = findings.filter((f) => f.accession_number === accession);
   return {
     findings: accFindings,
     pair: pairs.find((p) => p.accession_number === accession),
@@ -431,7 +408,8 @@ export async function getCategoryDetailedStats(): Promise<CategoryDetailedStat[]
       const g2b = cf.filter((f) => f.grade === "2b").length;
       const g3  = cf.filter((f) => f.grade === "3").length;
       const g4  = cf.filter((f) => f.grade === "4").length;
-      return { category: cat, total, g2bPct: pct(g2b, total), g3PlusPct: pct(g3 + g4, total) };
+      const g4b = cf.filter((f) => f.grade === "4b").length;
+      return { category: cat, total, g2bPct: pct(g2b, total), g3PlusPct: pct(g3 + g4 + g4b, total) };
     })
     .sort((a, b) => b.g3PlusPct - a.g3PlusPct);
 }
@@ -466,6 +444,8 @@ export interface GradeTrendPoint {
   g2bMipsPct: number;
   g3PlusPct: number;
   g4Pct: number;
+  g4aPct: number;
+  g4bPct: number;
   totalFindings: number;
 }
 
@@ -494,6 +474,8 @@ export async function getGradeTrendData(mode: "week" | "month" | "year" = "month
       const g2b = pf.filter((f) => f.grade === "2b").length;
       const g3  = pf.filter((f) => f.grade === "3").length;
       const g4  = pf.filter((f) => f.grade === "4").length;
+      const g4a = pf.filter((f) => f.grade === "4a").length;
+      const g4b = pf.filter((f) => f.grade === "4b").length;
       const mips2b = mipsGroups[key] ?? 0;
       const nonMips2b = Math.max(0, g2b - mips2b);
       return {
@@ -503,8 +485,10 @@ export async function getGradeTrendData(mode: "week" | "month" | "year" = "month
         g2bPct: pct(g2b, total),
         g2bNonMipsPct: pct(nonMips2b, total),
         g2bMipsPct: pct(mips2b, total),
-        g3PlusPct: pct(g3, total),
+        g3PlusPct: pct(g3 + g4 + g4b, total),
         g4Pct: pct(g4, total),
+        g4aPct: pct(g4a, total),
+        g4bPct: pct(g4b, total),
         totalFindings: total,
       };
     });
@@ -513,11 +497,15 @@ export async function getGradeTrendData(mode: "week" | "month" | "year" = "month
 // --- MIPS ---
 
 const MIPS_MEASURE_LABELS: Record<string, string> = {
-  ACRad44: "Коронарный кальциноз",
-  "364":   "Узлы лёгкого / Fleischner",
-  "405":   "Доброкач. абдоминальные",
-  "406":   "Узлы щитовидки",
-  QMM23:  "Эмфизема + LDCT",
+  ACRad44:  "Коронарный кальциноз",
+  MIPS_364: "Узлы лёгкого / Fleischner",
+  "364":    "Узлы лёгкого / Fleischner",
+  MIPS_405: "Доброкач. абдоминальные",
+  "405":    "Доброкач. абдоминальные",
+  MIPS_406: "Узлы щитовидки",
+  "406":    "Узлы щитовидки",
+  MIPS_360: "Структура протокола",
+  QMM23:    "Эмфизема + LDCT",
 };
 
 export async function countMIPS2bInFindings(findings: DVFinding[]): Promise<number> {

@@ -6,6 +6,8 @@ export const gradeColors: Record<Grade, { bg: string; text: string; badge: strin
   "2b": { bg: "bg-amber-50",    text: "text-amber-700",    badge: "bg-amber-100 text-amber-800",      border: "border-amber-500",   label: "Minor Clinical" },
   "3":  { bg: "bg-red-50",      text: "text-red-700",      badge: "bg-red-100 text-red-800",          border: "border-red-600",     label: "Significant Underreport" },
   "4":  { bg: "bg-red-50",      text: "text-red-700",      badge: "bg-red-100 text-red-800",          border: "border-red-600",     label: "Significant Overreport" },
+  "4a": { bg: "bg-orange-50",   text: "text-orange-700",   badge: "bg-orange-100 text-orange-800",    border: "border-orange-500",  label: "Minor Overreport" },
+  "4b": { bg: "bg-rose-50",     text: "text-rose-800",     badge: "bg-rose-200 text-rose-900",        border: "border-rose-700",    label: "Significant Overreport" },
 };
 
 export const gradeChartColors: Record<Grade, string> = {
@@ -14,6 +16,8 @@ export const gradeChartColors: Record<Grade, string> = {
   "2b": "#f59e0b",
   "3":  "#ea580c",
   "4":  "#dc2626",
+  "4a": "#f97316",
+  "4b": "#be123c",
 };
 
 export function gradeColor(grade: Grade): string {
