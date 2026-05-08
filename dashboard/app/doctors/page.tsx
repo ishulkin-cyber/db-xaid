@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Suspense } from "react";
 import {
   getDVFindings,
@@ -15,15 +14,7 @@ import {
   type PeriodMode,
 } from "@/lib/period";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { DoctorGradeBar } from "@/components/doctors/DoctorGradeBar";
+import { DoctorsTable } from "@/components/doctors/DoctorsTable";
 import { PeriodSelector } from "@/components/PeriodSelector";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -392,174 +383,13 @@ export default async function DoctorsPage({
               Нет данных за выбранный период
             </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">#</TableHead>
-                  <TableHead>Врач</TableHead>
-                  <TableHead className="text-right">Исследования</TableHead>
-                  <TableHead className="text-right">Находки</TableHead>
-                  <TableHead className="text-right">Клин. конкорд. %</TableHead>
-                  <TableHead className="text-right">2a</TableHead>
-                  <TableHead className="text-right">2b</TableHead>
-                  <TableHead className="text-right">2b-MIPS</TableHead>
-                  <TableHead className="text-right">3</TableHead>
-                  <TableHead className="text-right">4a</TableHead>
-                  <TableHead className="text-right">4b</TableHead>
-                  <TableHead>Распределение</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {doctors.map((doc, idx) => {
-                  const prev = prevDoctorMap[doc.doctor_id];
-                  return (
-                    <TableRow key={doc.doctor_id}>
-                      <TableCell className="text-muted-foreground font-medium">
-                        {idx + 1}
-                      </TableCell>
-                      <TableCell>
-                        <Link
-                          href={`/doctors/${doc.doctor_id}`}
-                          className="font-medium text-blue-600 hover:underline"
-                        >
-                          {doc.doctor_name}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {doc.total_studies}
-                        {prev && (
-                          <Delta curr={doc.total_studies} prev={prev.total_studies} />
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">{doc.total_findings}</TableCell>
-                      <TableCell className="text-right">
-                        <span
-                          className={
-                            doc.clinicalConcordance >= 80
-                              ? "text-emerald-600 font-semibold"
-                              : doc.clinicalConcordance >= 60
-                              ? "text-amber-600 font-semibold"
-                              : "text-red-600 font-semibold"
-                          }
-                        >
-                          {doc.clinicalConcordance}%
-                        </span>
-                        {prev && (
-                          <PctDelta
-                            curr={doc.clinicalConcordance}
-                            prev={prev.clinicalConcordance}
-                          />
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {doc.grade2a > 0 ? (
-                          <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                            {doc.grade2a}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">0</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {doc.grade2b > 0 ? (
-                          <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-                            {doc.grade2b}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">0</span>
-                        )}
-                        {prev && prev.total_findings > 0 && (
-                          <PctDelta
-                            curr={Math.round(doc.grade2b / doc.total_findings * 1000) / 10}
-                            prev={Math.round(prev.grade2b / prev.total_findings * 1000) / 10}
-                            invert
-                          />
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {(() => {
-                          const docMips = mips2bByDoctor.get(doc.doctor_id) ?? 0;
-                          const prevDocMips = prevMips2bByDoctor?.get(doc.doctor_id) ?? 0;
-                          const prevDoc = prevDoctorMap[doc.doctor_id];
-                          return (
-                            <>
-                              {docMips > 0 ? (
-                                <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
-                                  {docMips}
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground">0</span>
-                              )}
-                              {prevMips2bByDoctor && prevDoc && prevDoc.total_findings > 0 && (
-                                <PctDelta
-                                  curr={Math.round(docMips / doc.total_findings * 1000) / 10}
-                                  prev={Math.round(prevDocMips / prevDoc.total_findings * 1000) / 10}
-                                  invert
-                                />
-                              )}
-                            </>
-                          );
-                        })()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {doc.grade3 > 0 ? (
-                          <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
-                            {doc.grade3}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">0</span>
-                        )}
-                        {prev && prev.total_findings > 0 && (
-                          <PctDelta
-                            curr={Math.round(doc.grade3 / doc.total_findings * 1000) / 10}
-                            prev={Math.round(prev.grade3 / prev.total_findings * 1000) / 10}
-                            invert
-                          />
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {doc.grade4a > 0 ? (
-                          <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
-                            {doc.grade4a}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">0</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {(doc.grade4 + doc.grade4b) > 0 ? (
-                          <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-800">
-                            {doc.grade4 + doc.grade4b}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">0</span>
-                        )}
-                        {prev && prev.total_findings > 0 && (
-                          <PctDelta
-                            curr={Math.round((doc.grade4 + doc.grade4b) / doc.total_findings * 1000) / 10}
-                            prev={Math.round((prev.grade4 + prev.grade4b) / prev.total_findings * 1000) / 10}
-                            invert
-                          />
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <DoctorGradeBar
-                          grade1={doc.grade1}
-                          grade2a={doc.grade2a}
-                          grade2b={doc.grade2b}
-                          grade2bMips={mips2bByDoctor.get(doc.doctor_id) ?? 0}
-                          grade3={doc.grade3}
-                          grade4={doc.grade4}
-                          grade4a={doc.grade4a}
-                          grade4b={doc.grade4b}
-                          total={doc.total_findings}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <DoctorsTable
+              doctors={doctors}
+              mips2bByDoctor={Object.fromEntries(mips2bByDoctor)}
+              prevDoctorMap={prevDoctorMap}
+              prevMips2bByDoctor={prevMips2bByDoctor ? Object.fromEntries(prevMips2bByDoctor) : null}
+              compareEnabled={compareEnabled}
+            />
           )}
         </CardContent>
       </Card>
