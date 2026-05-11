@@ -9,6 +9,10 @@ import type {
   Grade,
   MIPSStat,
   DoctorMIPSStat,
+  CombinedQAStats,
+  ReporterStats,
+  FinalizerStats,
+  DoctorMissReport,
 } from "./types";
 import { pct } from "./utils";
 import { readRepoJSON } from "./git-data";
@@ -724,3 +728,129 @@ export async function getDoctorRecurringPatterns(doctorId: number): Promise<{
 
   return { g3Patterns, mipsPatterns };
 }
+
+// --- Combined QA (xAID vs SimonMed finals) ---
+
+interface RawCombinedFinding {
+  accession_number: string;
+  finding_category: string;
+  grade: string;
+  prelim_report_by: string;
+  finalized_by: string;
+  discrepancy_type: string;
+}
+
+interface RawCombinedData {
+  findings: RawCombinedFinding[];
+  study_summaries: { accession_number: string; sheet_date: string; prelim_report_by: string }[];
+  pending_final_report?: { accession_number: string; sheet_date: string; exam_description: string }[];
+}
+
+interface RawMissFile {
+  doctor_name: string;
+  doctor_id: number;
+  total_studies: number;
+  total_missed_pathologies: number;
+  breakdown_by_category?: Record<string, number>;
+  summary_by_category?: Record<string, number>;
+  category_breakdown?: Record<string, number>;
+}
+
+export const getCombinedQAStats = cache(async (): Promise<CombinedQAStats> => {
+  const data = await readRepoJSON<RawCombinedData>("combined_analysis.json");
+  const findings = data.findings;
+  const total = findings.length;
+
+  const g1  = findings.filter((f) => f.grade === "1").length;
+  const g2a = findings.filter((f) => f.grade === "2a").length;
+  const g2b = findings.filter((f) => f.grade === "2b").length;
+  const g3  = findings.filter((f) => f.grade === "3").length;
+  const g4  = findings.filter((f) => f.grade === "4").length;
+
+  const reporters = [...new Set(findings.map((f) => f.prelim_report_by).filter(Boolean))];
+  const byReporter: ReporterStats[] = reporters.map((name) => {
+    const rf = findings.filter((f) => f.prelim_report_by === name);
+    const rt = rf.length;
+    const rg1  = rf.filter((f) => f.grade === "1").length;
+    const rg2a = rf.filter((f) => f.grade === "2a").length;
+    const rg2b = rf.filter((f) => f.grade === "2b").length;
+    const rg3  = rf.filter((f) => f.grade === "3").length;
+    const rg4  = rf.filter((f) => f.grade === "4").length;
+    return { name, totalFindings: rt, g1: rg1, g2a: rg2a, g2b: rg2b, g3: rg3, g4: rg4,
+      concordance: pct(rg1, rt), clinicalConcordance: pct(rg1 + rg2a, rt) };
+  });
+
+  const finalizers = [...new Set(findings.map((f) => f.finalized_by).filter(Boolean))];
+  const byFinalizer: FinalizerStats[] = finalizers
+    .map((name) => {
+      const ff = findings.filter((f) => f.finalized_by === name);
+      const ft = ff.length;
+      const fg1  = ff.filter((f) => f.grade === "1").length;
+      const fg2a = ff.filter((f) => f.grade === "2a").length;
+      return { name, totalFindings: ft, concordance: pct(fg1, ft), clinicalConcordance: pct(fg1 + fg2a, ft) };
+    })
+    .sort((a, b) => b.totalFindings - a.totalFindings);
+
+  const catCounts: Record<string, { count: number; g3Plus: number }> = {};
+  for (const f of findings.filter((f) => f.grade !== "1")) {
+    if (!catCounts[f.finding_category]) catCounts[f.finding_category] = { count: 0, g3Plus: 0 };
+    catCounts[f.finding_category].count++;
+    if (f.grade === "3" || f.grade === "4") catCounts[f.finding_category].g3Plus++;
+  }
+  const topCategories = Object.entries(catCounts)
+    .map(([category, { count, g3Plus }]) => ({ category, count, g3Plus }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  const pending = data.pending_final_report ?? [];
+  return {
+    totalStudies: data.study_summaries.length,
+    totalFindings: total,
+    pendingCount: pending.length,
+    g1, g1Pct: pct(g1, total),
+    g2a, g2aPct: pct(g2a, total),
+    g2b, g2bPct: pct(g2b, total),
+    g3, g3Pct: pct(g3, total),
+    g4, g4Pct: pct(g4, total),
+    concordance: pct(g1, total),
+    clinicalConcordance: pct(g1 + g2a, total),
+    significantRate: pct(g3 + g4, total),
+    byReporter,
+    byFinalizer,
+    topCategories,
+    pendingStudies: pending.map((p) => ({
+      accession_number: p.accession_number,
+      sheet_date: p.sheet_date,
+      exam_description: p.exam_description ?? "",
+    })),
+  };
+});
+
+export const getDoctorMissReports = cache(async (): Promise<DoctorMissReport[]> => {
+  const files = [
+    "misses_lukyanov.json",
+    "misses_astakhov.json",
+    "misses_pavlovich.json",
+    "misses_rodina.json",
+  ];
+  const results = await Promise.all(files.map((f) => readRepoJSON<RawMissFile>(f)));
+  return results
+    .map((d) => {
+      const breakdown = d.breakdown_by_category ?? d.summary_by_category ?? d.category_breakdown ?? {};
+      const top_categories = Object.entries(breakdown)
+        .map(([category, count]) => ({ category, count: count as number }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 3);
+      return {
+        doctor_name: d.doctor_name,
+        doctor_id: d.doctor_id,
+        total_studies: d.total_studies,
+        total_missed_pathologies: d.total_missed_pathologies,
+        miss_rate: d.total_studies > 0
+          ? Math.round((d.total_missed_pathologies / d.total_studies) * 10) / 10
+          : 0,
+        top_categories,
+      };
+    })
+    .sort((a, b) => b.total_missed_pathologies - a.total_missed_pathologies);
+});

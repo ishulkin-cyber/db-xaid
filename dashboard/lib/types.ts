@@ -108,3 +108,49 @@ export interface TrendDataPoint {
   grade4a: number;
   grade4b: number;
 }
+
+export interface ReporterStats {
+  name: string;
+  totalFindings: number;
+  g1: number;
+  g2a: number;
+  g2b: number;
+  g3: number;
+  g4: number;
+  concordance: number;
+  clinicalConcordance: number;
+}
+
+export interface FinalizerStats {
+  name: string;
+  totalFindings: number;
+  concordance: number;
+  clinicalConcordance: number;
+}
+
+export interface CombinedQAStats {
+  totalStudies: number;
+  totalFindings: number;
+  pendingCount: number;
+  g1: number; g1Pct: number;
+  g2a: number; g2aPct: number;
+  g2b: number; g2bPct: number;
+  g3: number; g3Pct: number;
+  g4: number; g4Pct: number;
+  concordance: number;
+  clinicalConcordance: number;
+  significantRate: number;
+  byReporter: ReporterStats[];
+  byFinalizer: FinalizerStats[];
+  topCategories: { category: string; count: number; g3Plus: number }[];
+  pendingStudies: { accession_number: string; sheet_date: string; exam_description: string }[];
+}
+
+export interface DoctorMissReport {
+  doctor_name: string;
+  doctor_id: number;
+  total_studies: number;
+  total_missed_pathologies: number;
+  miss_rate: number;
+  top_categories: { category: string; count: number }[];
+}
